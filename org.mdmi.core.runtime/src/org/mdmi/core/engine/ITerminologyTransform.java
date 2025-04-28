@@ -17,6 +17,8 @@ package org.mdmi.core.engine;
  */
 public interface ITerminologyTransform {
 
+	boolean healthCheck();
+
 	TransformCode transform(String sourceURI, String sourceCode, String targetURI);
 
 	public static class TransformCode {

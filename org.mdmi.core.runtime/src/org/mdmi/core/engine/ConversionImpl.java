@@ -37,6 +37,7 @@ import org.mdmi.MDMIDatatype;
 import org.mdmi.MessageGroup;
 import org.mdmi.Node;
 import org.mdmi.SemanticElement;
+import org.mdmi.core.IElementValue;
 import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver.MI;
 import org.mdmi.core.MdmiValueSet;
@@ -89,6 +90,10 @@ class ConversionImpl {
 	public FHIRTerminologyTransform getTerminologyService() {
 		if (terminologyService == null) {
 			terminologyService = new FHIRTerminologyTransform();
+
+			if (!terminologyService.healthCheck()) {
+				FHIRTerminologyTransform.processTerminology = false;
+			}
 		}
 		return terminologyService;
 	}
@@ -128,7 +133,7 @@ class ConversionImpl {
 		if (!xv.isNullOrEmpty()) {
 			theSeerValues.add(new SEERvalues(mapToMDMI.getBusinessElement().getName(), xv));
 
-			execMapFromMDMI(xv, targetSemanticElement, mapFromMDMI);
+			execMapFromMDMI(sourceSemanticElement, xv, targetSemanticElement, mapFromMDMI);
 		}
 
 		return !xv.isNullOrEmpty();
@@ -270,7 +275,7 @@ class ConversionImpl {
 		return false;
 	}
 
-	void execMapFromMDMI(XValue v, XElementValue trg, ConversionRule toSE) {
+	void execMapFromMDMI(XElementValue sourceSemanticElement, XValue v, XElementValue trg, ConversionRule toSE) {
 
 		if (v != null) {
 
@@ -350,6 +355,58 @@ class ConversionImpl {
 					"Unable To Execute " + parseFunctionName(toSE.getRule()) + " at " +
 							getFullPathForNode(toSE.getOwner().getSyntaxNode()) + " for " +
 							toSE.getBusinessElement().getName());
+			}
+		} else if (toSE.getRule().startsWith("REFERENCE:")) {
+
+			String[] referenceParameters = toSE.getRule().split(":");
+			if (referenceParameters.length == 4) {
+				String functionName = referenceParameters[1];
+				String sourceName = referenceParameters[3];
+
+				for (IElementValue c : sourceSemanticElement.getChildren()) {
+					for (ConversionRule cr : c.getSemanticElement().getMapFromMdmi()) {
+
+						if (sourceName.equals(cr.getBusinessElement().getName())) {
+							logger.trace("Found Reference Element " + cr.getBusinessElement().getName());
+
+							if (trg.getXValue().getValues().size() == 0) {
+								if ((trg.getXValue().getDatatype() instanceof DTCStructured)) {
+									XDataStruct xs = new XDataStruct(trg.getXValue());
+									trg.getXValue().addValue(xs);
+								}
+
+							}
+
+							Object source = null;
+
+							XValue v2 = ((XElementValue) c).getXValue();
+							if (v2.getDatatype().isSimple()) {
+								source = v;
+							} else {
+								source = v2.getValue();
+							}
+
+							Object target = null;
+							if (trg.getXValue().getDatatype().isSimple()) {
+								target = trg;
+							} else {
+								target = trg.value();
+							}
+							boolean executed = targetDatamapInterpreter.execute(
+								functionName, source, target, targetProperties, toSE);
+
+							if (!executed) {
+
+								logger.error(
+									"Unable To Execute " + parseFunctionName(toSE.getRule()) + " at " +
+											getFullPathForNode(toSE.getOwner().getSyntaxNode()) + " for " +
+											toSE.getBusinessElement().getName());
+							}
+
+						}
+
+					}
+				}
 			}
 
 		} else {

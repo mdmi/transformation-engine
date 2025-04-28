@@ -476,6 +476,8 @@ public class MdmiUow implements Runnable {
 
 		HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER = new HashMap<>();
 
+		HashSet<String> targetSementicReferences = new HashSet<>();
+
 		for (SemanticElement targetSementicElement : l) {
 			if (!targetSementicElement.isMultipleInstances()) {
 				continue;
@@ -489,6 +491,16 @@ public class MdmiUow implements Runnable {
 					}
 					targetSementicElementsByBER.get(tme.getBusinessElement().getUniqueIdentifier()).add(
 						targetSementicElement);
+				}
+			}
+
+		}
+
+		for (SemanticElement targetSementicElement : l) {
+
+			for (ConversionRule tmo : targetSementicElement.getMapFromMdmi()) {
+				if (!StringUtils.isEmpty(tmo.getRule()) && tmo.getRule().startsWith("REFERENCE:")) {
+					targetSementicReferences.add(targetSementicElement.getName());
 				}
 			}
 
@@ -576,6 +588,27 @@ public class MdmiUow implements Runnable {
 							}
 						}
 
+						if (targetSementicReferences.contains(targetSementicElement.getName())) {
+
+							boolean checkReferenceContainment = false;
+							if (tmo.getRule().startsWith("REFERENCE:")) {
+
+								String[] referenceParameters = tmo.getRule().split(":");
+								String containmentParameter = referenceParameters[2];
+
+								if (sourceElementValue.getParent() != null) {
+									for (ConversionRule zzz : sourceElementValue.getParent().getSemanticElement().getMapToMdmi()) {
+
+										if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
+											checkReferenceContainment = true;
+										}
+									}
+								}
+
+							}
+							wholeStackMapped = checkReferenceContainment;
+						}
+
 						if (wholeStackMapped) {
 							logger.trace("CREATING TARGET ELEMENT " + targetSementicElement.getName());
 							XElementValue targetElementValue = new XElementValue(
@@ -636,7 +669,9 @@ public class MdmiUow implements Runnable {
 
 		ArrayList<SemanticElement> singles = new ArrayList<>();
 
-		for (SemanticElement semanticElement : transferInfo.targetModel.getModel().getElementSet().getSemanticElements()) {
+		for (
+
+		SemanticElement semanticElement : transferInfo.targetModel.getModel().getElementSet().getSemanticElements()) {
 			if (!semanticElement.isMultipleInstances()) {
 				singles.add(semanticElement);
 			}
@@ -654,7 +689,9 @@ public class MdmiUow implements Runnable {
 		 * If the single parent has content - populate the appropriate single instances per container
 		 *
 		 */
-		for (SemanticElement single : singles) {
+		for (
+
+		SemanticElement single : singles) {
 
 			SemanticElement theSingleParent = single.getParent();
 			while (theSingleParent != null) {
@@ -749,7 +786,9 @@ public class MdmiUow implements Runnable {
 
 		// IElementValue targetElementValue : targettosource.keySet()) {
 
-		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
+		for (
+
+		IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
 			if (targettosource.containsKey(targetElementValue)) {
 				if (targetElementValue.getParent() == null) {
 					if (targetElementValue.getSemanticElement().isMultipleInstances()) {
@@ -892,17 +931,19 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		for (String key : impl.sourceDatamapInterpreter.exceptions.keySet()) {
+		for (
+
+		String key : impl.sourceDatamapInterpreter.exceptions.keySet()) {
 			logger.error(key);
 			logger.error(impl.sourceDatamapInterpreter.exceptions.get(key).getMessage());
 		}
 
-		for (String key : impl.targetDatamapInterpreter.exceptions.keySet()) {
+		for (
+
+		String key : impl.targetDatamapInterpreter.exceptions.keySet()) {
 			logger.error(key);
 			logger.error(impl.targetDatamapInterpreter.exceptions.get(key).getMessage());
 		}
-
-		// logger.debug("Target Semantic Model : \n" + trgSemanticModel.toString());
 
 		watch.split();
 		logger.trace("Done : " + watch.toSplitString());
@@ -954,31 +995,6 @@ public class MdmiUow implements Runnable {
 			return Utils.mapOfTransforms.get(ser.getDescription()).containsKey(xvalue3.getValue("value"));
 
 		}
-
-		// String qualifierFunction = "is" + filterTarget.getName();
-		//
-		// Properties theProperties = new Properties();
-		// if (!StringUtils.isEmpty(ser.getDescription())) {
-		// if (Utils.mapOfTransforms.containsKey(ser.getDescription())) {
-		// qualifierFunction = "sourceCheckFilter";
-		// theProperties.put("VALUESET", Utils.mapOfTransforms.get(ser.getDescription()));
-		// } else {
-		// theProperties.put("VALUESET", Collections.EMPTY_SET);
-		// }
-		//
-		// } else {
-		// theProperties.put("VALUESET", Collections.EMPTY_SET);
-		// }
-		//
-		// XValue xvalue = (XValue) sourceFilterValue.getXValue();
-		//
-		// XDataStruct xvalue2 = (XDataStruct) xvalue.getValueByName("coding");
-		//
-		// XDataStruct xvalue3 = (XDataStruct) xvalue2.getValue("code");
-		//
-		// if (impl.targetDatamapInterpreter.execute(qualifierFunction, xvalue3.getValue("value"), theProperties)) {
-		// return true;
-		// }
 
 		return false;
 

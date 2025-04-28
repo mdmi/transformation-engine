@@ -17,14 +17,18 @@ import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.util.Timeout;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -260,6 +264,44 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 			return BLANK;
 		}
 
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.mdmi.core.engine.ITerminologyTransform#healthCheck()
+	 */
+	@Override
+	public boolean healthCheck() {
+
+		Timeout connectionTimeout = Timeout.ofSeconds(2); // Time to establish connection
+		Timeout responseTimeout = Timeout.ofSeconds(4); // Time waiting for response
+
+		// Configure request timeouts
+		RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(connectionTimeout).setResponseTimeout(
+			responseTimeout).build();
+
+		// Create HttpClient with default request config
+		try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build()) {
+
+			// Prepare GET request
+			HttpGet request = new HttpGet(fhirTerminologyURL + "/metadata");
+			request.setHeader("Accept", "application/fhir+json");
+
+			// Execute the request
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				HttpEntity entity = response.getEntity();
+				if (entity != null) {
+					return true;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		processTerminology = false;
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 }

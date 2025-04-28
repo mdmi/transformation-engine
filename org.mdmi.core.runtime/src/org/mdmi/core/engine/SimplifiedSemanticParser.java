@@ -1625,7 +1625,7 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			containers.put(rootElementValue.getSemanticElement().getName(), rootElementValue);
 		}
 
-		walkComputedIn(mdl, elementValueSet, properties, containers);
+		// walkComputedIn(mdl, elementValueSet, properties, containers);
 		watch.split();
 		logger.trace("walkComputedIn: " + watch.toSplitString());
 
