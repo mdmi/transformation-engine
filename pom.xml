@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.mdmi</groupId>
 	<artifactId>org.mdmi.pom</artifactId>
-	<version>4.0.0-SNAPSHOT</version>
+	<version>4.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>MDMI Eclipse Plugin Parent POM</name>
 	<description>MDMI Eclipse Plugin Parent POM</description>

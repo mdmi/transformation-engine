@@ -194,7 +194,7 @@ public class Conversion {
 	 */
 	void execute() {
 		try {
-			ConversionImpl impl = new ConversionImpl();
+			ConversionImpl impl = new ConversionImpl(null, null, null);
 			impl.start(false);
 
 			ArrayList<ConversionInfo> cis = getTopLevelCis();
@@ -401,7 +401,7 @@ public class Conversion {
 
 	private void executeCis(XElementValue srcOwner, ConversionInfo parent, XElementValue trgOwner,
 			ArrayList<ConversionInfo> cis) throws Exception {
-		ConversionImpl impl = new ConversionImpl();
+		ConversionImpl impl = new ConversionImpl(null, null, null);
 		for (int i = 0; i < cis.size(); i++) {
 			ConversionInfo ci = cis.get(i);
 			for (int j = 0; j < ci.source.size(); j++) {

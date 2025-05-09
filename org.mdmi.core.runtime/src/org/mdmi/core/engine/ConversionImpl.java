@@ -30,13 +30,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.mdmi.ConversionRule;
 import org.mdmi.DTCStructured;
 import org.mdmi.DTSEnumerated;
+import org.mdmi.DTSPrimitive;
 import org.mdmi.EnumerationLiteral;
 import org.mdmi.Field;
 import org.mdmi.MDMIBusinessElementReference;
 import org.mdmi.MDMIDatatype;
+import org.mdmi.MDMIFactory;
+import org.mdmi.MDMIFactory.Primitive;
 import org.mdmi.MessageGroup;
 import org.mdmi.Node;
 import org.mdmi.SemanticElement;
+import org.mdmi.core.ElementValueSet;
 import org.mdmi.core.IElementValue;
 import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver.MI;
@@ -66,6 +70,25 @@ class ConversionImpl {
 	boolean first = true;
 
 	// ObjectNode conversionNode;
+
+	HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget;
+
+	HashMap<IElementValue, IElementValue> targettosource;
+
+	ElementValueSet trgSemanticModel;
+
+	/**
+	 * @param sourcetotarget
+	 * @param targettosource
+	 * @param trgSemanticModel
+	 */
+	public ConversionImpl(HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget,
+			HashMap<IElementValue, IElementValue> targettosource, ElementValueSet trgSemanticModel) {
+		this.sourcetotarget = sourcetotarget;
+		this.targettosource = targettosource;
+		this.trgSemanticModel = trgSemanticModel;
+		// TODO Auto-generated constructor stub
+	}
 
 	private static String parseFunctionName(String rule) {
 
@@ -275,6 +298,8 @@ class ConversionImpl {
 		return false;
 	}
 
+	// HashMap<String, String> refereneces = new HashMap<>();
+
 	void execMapFromMDMI(XElementValue sourceSemanticElement, XValue v, XElementValue trg, ConversionRule toSE) {
 
 		if (v != null) {
@@ -367,6 +392,9 @@ class ConversionImpl {
 					for (ConversionRule cr : c.getSemanticElement().getMapFromMdmi()) {
 
 						if (sourceName.equals(cr.getBusinessElement().getName())) {
+
+							MDMIBusinessElementReference theBE = cr.getBusinessElement();
+
 							logger.trace("Found Reference Element " + cr.getBusinessElement().getName());
 
 							if (trg.getXValue().getValues().size() == 0) {
@@ -379,11 +407,43 @@ class ConversionImpl {
 
 							Object source = null;
 
-							XValue v2 = ((XElementValue) c).getXValue();
-							if (v2.getDatatype().isSimple()) {
+							if (v.getDatatype().isSimple()) {
 								source = v;
 							} else {
+								source = v.getValue();
+							}
+
+							XValue xv = new XValue(theBE.getName(), theBE.getReferenceDatatype());
+							String thrRule = "";
+
+							XElementValue foo = (XElementValue) c;
+
+							for (ConversionRule cr2 : foo.getSemanticElement().getMapToMdmi()) {
+								if (sourceName.equals(cr2.getBusinessElement().getName())) {
+									thrRule = cr2.getRule();
+								}
+							}
+
+							XValue v2 = ((XElementValue) c).getXValue();
+							if (v2.getDatatype().isSimple()) {
+								source = v2;
+							} else {
 								source = v2.getValue();
+							}
+
+							boolean executed = false;
+							if (xv.getValue() == null) {
+								executed = sourceDatamapInterpreter.execute(
+									parseFunctionName(thrRule), source, xv, targetProperties, toSE);
+
+								// executed = sourceDatamapInterpreter.execute(
+								// parseFunctionName(toBE.getRule()), src.value(), v, sourceProperties, toBE);
+
+							} else {
+								executed = sourceDatamapInterpreter.execute(
+									parseFunctionName(thrRule), source, xv.getValue(), targetProperties, toSE);
+								// executed = sourceDatamapInterpreter.execute(
+								// parseFunctionName(toBE.getRule()), src.value(), xv.getValue(), sourceProperties, toBE);
 							}
 
 							Object target = null;
@@ -392,8 +452,23 @@ class ConversionImpl {
 							} else {
 								target = trg.value();
 							}
-							boolean executed = targetDatamapInterpreter.execute(
-								functionName, source, target, targetProperties, toSE);
+							MDMIDatatype asdf;
+
+							DTSPrimitive primitive = MDMIFactory.eINSTANCE.createDTSPrimitive(Primitive.String);
+
+							XValue guid = new XValue(theBE.getName(), primitive);
+
+							String guid2 = "MISSING";
+
+							if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
+								guid2 = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
+
+							}
+
+							guid.setValue(guid2);
+
+							executed = targetDatamapInterpreter.execute(
+								"mapStringToFHIR_Reference", guid, target, targetProperties, toSE);
 
 							if (!executed) {
 
@@ -409,7 +484,9 @@ class ConversionImpl {
 				}
 			}
 
-		} else {
+		} else
+
+		{
 			if (trg.getXValue().getValues().size() == 0 && (trg.getXValue().getDatatype() instanceof DTCStructured)) {
 				XDataStruct xs = new XDataStruct(trg.getXValue());
 				trg.getXValue().addValue(xs);

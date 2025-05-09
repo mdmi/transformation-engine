@@ -49,8 +49,6 @@ import org.mdmi.core.ISemanticParser;
 import org.mdmi.core.ISyntacticParser;
 import org.mdmi.core.ISyntaxNode;
 import org.mdmi.core.Mdmi;
-import org.mdmi.core.MdmiMessage;
-import org.mdmi.core.MdmiModelRef;
 import org.mdmi.core.MdmiResolver;
 import org.mdmi.core.MdmiTransferInfo;
 import org.mdmi.core.engine.javascript.Utils;
@@ -458,7 +456,10 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.trace("match : " + watch.toSplitString());
 
-		ConversionImpl impl = new ConversionImpl();
+		HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget = new HashMap<>();
+		HashMap<IElementValue, IElementValue> targettosource = new HashMap<>();
+
+		ConversionImpl impl = new ConversionImpl(sourcetotarget, targettosource, trgSemanticModel);
 
 		impl.initializeDI(
 			transferInfo.sourceModel.getGroup(), transferInfo.targetModel.getGroup(), transferInfo.sourceProperties,
@@ -466,9 +467,6 @@ public class MdmiUow implements Runnable {
 
 		watch.split();
 		logger.trace("impl.initializeDI " + watch.getTime());
-
-		HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget = new HashMap<>();
-		HashMap<IElementValue, IElementValue> targettosource = new HashMap<>();
 
 		boolean skipContainmentCheck = "SKIPCONTAINMENT".equals(transferInfo.targetModel.getGroup().getDescription());
 
@@ -589,7 +587,6 @@ public class MdmiUow implements Runnable {
 						}
 
 						if (targetSementicReferences.contains(targetSementicElement.getName())) {
-
 							boolean checkReferenceContainment = false;
 							if (tmo.getRule().startsWith("REFERENCE:")) {
 
@@ -1283,119 +1280,6 @@ public class MdmiUow implements Runnable {
 		}
 		for (SemanticElement child : theSemanticElement.getChildren()) {
 			populateSourceSemanticModel(child, p, bers, created, singles);
-		}
-	}
-
-	public void runxxx(MdmiModelRef sMod, MdmiMessage tMsg, ArrayList<MDMIBusinessElementReference> bers,
-			SemanticElement semanticContainer, List<SemanticElement> semanticElements, String location) {
-		try {
-
-			logger.info("Execute ISOSemantic ");
-
-			transferInfo = new MdmiTransferInfo(sMod, tMsg, sMod, tMsg, bers);
-
-			transferInfo.location = location;
-
-			ConversionImpl impl = new ConversionImpl();
-			impl.sourceDatamapInterpreter = null;
-			impl.targetDatamapInterpreter = null;
-
-			trgSemanticModel = new ElementValueSet();
-			srcSemanticModel = new ElementValueSet();
-			//
-			logger.info("Create Source Model ");
-			ArrayList<SemanticElement> created = new ArrayList<>();
-			ArrayList<String> singles = new ArrayList<>();
-			populateSourceSemanticModel(semanticContainer, null, bers, created, singles);
-
-			processSourceSemanticModel();
-
-			logger.debug("Target Semantic Model : \n" + trgSemanticModel.toString());
-			logger.info("Execute processConversions ");
-			processConversions();
-			logger.info("Execute processOutboundTargetMessage");
-
-			processTargetSemanticModel();
-
-			HashMap<String, IElementValue> results = new HashMap<>();
-
-			for (IElementValue ev : trgSemanticModel.getAllElementValues()) {
-				results.put(ev.getSemanticElement().getName(), ev);
-			}
-
-			for (SemanticElement se : created) {
-				if (!results.containsKey(se.getName())) {
-					logger.error("Semantic Element not Transformed " + se.getName());
-					logger.error(getFullPathForNode(se.getSyntaxNode()));
-
-					for (ConversionRule tbe : se.getMapFromMdmi()) {
-						logger.error("Semantic Element not Transformed " + tbe.getBusinessElement().getName());
-
-					}
-					for (ConversionRule tse : se.getMapToMdmi()) {
-						logger.error("Semantic Element not Transformed " + tse.getBusinessElement().getName());
-
-					}
-
-					// for (se.getMapToMdmi()) {
-					//
-					// }
-				}
-			}
-
-			if (impl.sourceDatamapInterpreter != null) {
-				for (String function : impl.sourceDatamapInterpreter.exceptions.keySet()) {
-					logger.error(
-						"Datatype Interperted Errors " + function + " " +
-								impl.sourceDatamapInterpreter.exceptions.get(function).getMessage());
-				}
-			} else {
-				logger.trace("impl.datamapInterpreter  not set");
-			}
-
-			if (impl.targetDatamapInterpreter != null) {
-				for (String function : impl.targetDatamapInterpreter.exceptions.keySet()) {
-					logger.error(
-						"Datatype Interperted Errors " + function + " " +
-								impl.targetDatamapInterpreter.exceptions.get(function).getMessage());
-				}
-			} else {
-				logger.trace("impl.datamapInterpreter  not set");
-			}
-
-			processOutboundTargetMessage();
-
-			transferInfo.sourceMessage.setData(transferInfo.targetMessage.getData());
-
-			srcSemanticModel = new ElementValueSet();
-			processInboundSourceMessage();
-
-			results.clear();
-			for (IElementValue ev : srcSemanticModel.getAllElementValues()) {
-				results.put(ev.getSemanticElement().getName(), ev);
-			}
-
-			for (SemanticElement se : created) {
-				if (!results.containsKey(se.getName())) {
-
-					StringBuffer message = new StringBuffer(
-						"Semantic Element not Parsed " + se.getName() + " SYNTAXNODE = " +
-								getFullPathForNode(se.getSyntaxNode()));
-
-					for (ConversionRule tose : se.getMapToMdmi()) {
-
-						message.append(" (").append(tose.getBusinessElement().getName()).append(")");
-					}
-
-					logger.error(message.toString());
-				}
-			}
-
-			postProcess();
-
-			logger.info("Completed Transformation");
-		} catch (RuntimeException ex) {
-			logger.error("Exception during transformation", ex);
 		}
 	}
 
