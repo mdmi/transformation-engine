@@ -222,12 +222,12 @@ public class MdmiUow implements Runnable {
 		}
 
 		watch.split();
-		logger.trace("getSyntaxProvider and getSemanticProvider : " + watch.toSplitString());
+		logger.info("getSyntaxProvider and getSemanticProvider : " + watch.toSplitString());
 
 		srcSyntaxModel = srcSynProv.parse(transferInfo.sourceModel.getModel(), transferInfo.sourceMessage);
 
 		watch.split();
-		logger.trace("parse : " + watch.toSplitString());
+		logger.info("parse : " + watch.toSplitString());
 
 		logger.debug("Source Syntax Model : \n" + srcSyntaxModel.toString());
 
@@ -238,7 +238,7 @@ public class MdmiUow implements Runnable {
 			transferInfo.sourceValues);
 
 		watch.split();
-		logger.trace("buildSemanticModel : " + watch.toSplitString());
+		logger.info("buildSemanticModel : " + watch.toSplitString());
 
 		if (logger.isTraceEnabled()) {
 			logElementSet(srcSemanticModel);
@@ -302,15 +302,29 @@ public class MdmiUow implements Runnable {
 
 	// 2. Build the target syntax tree and semantic model (if any)
 	void processInboundTargetMessage() {
+
+		StopWatch watch = new StopWatch();
+		watch.start();
+
 		trgSemanticModel = new ElementValueSet();
 		transferInfo.targetMessage.getData();
-		// if (data == null || data.length <= 0) {
-		// return;
-		// }
+
+		watch.split();
+		logger.info("Execute preProcess processInboundTargetMessage get data" + Thread.currentThread().getName());
+
 		ISemanticParser trgSemProv = getSemanticProvider(transferInfo.getTargetMessageGroup());
 		ISyntacticParser trgSynProv = getSyntaxProvider(transferInfo.getTargetMessageGroup());
 
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage getSemanticProvider" + Thread.currentThread().getName());
+
 		transferInfo.targetModel.getModel().getSyntaxModel().getRoot();
+
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage transferInfo.targetModel.getModel().getSyntaxModel().getRoot()" +
+					Thread.currentThread().getName());
 
 		if (transferInfo.targetMessage.getData() != null) {
 			trgSyntaxModel = trgSynProv.parse(transferInfo.targetModel.getModel(), transferInfo.targetMessage);
@@ -322,12 +336,21 @@ public class MdmiUow implements Runnable {
 			transferInfo.targetModel.getModel(), trgSyntaxModel, trgSemanticModel, transferInfo.targetProperties,
 			transferInfo.targetValues);
 
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel" + Thread.currentThread().getName());
+
 	}
 
 	void getMappedStack(SemanticElement se, Stack<SemanticElement> mappedParentStack) {
 		if (se != null) {
 			if (se.getSemanticElementType().equals(SemanticElementType.NORMAL) && !(se.getMapFromMdmi().isEmpty())) {
 				mappedParentStack.push(se);
+			}
+
+			if (se.equals(se.getParent())) {
+				System.err.println(se.getName());
+				return;
 			}
 			getMappedStack(se.getParent(), mappedParentStack);
 		}
@@ -1001,25 +1024,33 @@ public class MdmiUow implements Runnable {
 	void processOutboundTargetMessage() {
 		ISemanticParser trgSemProv = getSemanticProvider(transferInfo.getTargetMessageGroup());
 		ISyntacticParser trgSynProv = getSyntaxProvider(transferInfo.getTargetMessageGroup());
-		long ts = System.currentTimeMillis();
+		// long ts = System.currentTimeMillis();
+
+		StopWatch watch = new StopWatch();
+		watch.start();
 
 		trgSemProv.updateTargetSemanticModel(
 			transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties);
+		watch.split();
+		logger.info("Split processOutboundTargetMessage updateTargetSemanticModel : " + watch.toSplitString());
 
 		processTargetSemanticModel();
+		watch.split();
+		logger.info("Split processOutboundTargetMessage processTargetSemanticModel : " + watch.toSplitString());
 
 		if (trgSyntaxModel != null) {
 			trgSemProv.updateSyntacticModel(
 				transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties);
+			watch.split();
+			logger.info("Split processOutboundTargetMessage updateSyntacticModel : " + watch.toSplitString());
+
 		} else {
 			trgSyntaxModel = trgSemProv.createNewSyntacticModel(
 				transferInfo.targetModel.getModel(), trgSemanticModel, transferInfo.targetProperties);
+			watch.split();
+			logger.info("Split processOutboundTargetMessage createNewSyntacticModel : " + watch.toSplitString());
+
 		}
-
-		logger.debug("Target Syntax Model : \n" + trgSyntaxModel.toString());
-
-		logger.debug("updateSyntacticModel  took " + (System.currentTimeMillis() - ts) + " milliseconds.");
-		ts = System.currentTimeMillis();
 
 		StringBuffer runtimeComment = new StringBuffer();
 
@@ -1062,9 +1093,10 @@ public class MdmiUow implements Runnable {
 		trgSynProv.serialize(
 			transferInfo.targetModel.getModel(), transferInfo.targetMessage, trgSyntaxModel, runtimeComment.toString());
 
+		watch.split();
+		logger.info("Split processOutboundTargetMessage serialize : " + watch.toSplitString());
+
 		//
-		logger.debug(
-			"Serializing the target syntax model took " + (System.currentTimeMillis() - ts) + " milliseconds.");
 	}
 
 	private boolean isBreadCrumb(SemanticElement semanticElement) {

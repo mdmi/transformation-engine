@@ -53,7 +53,6 @@ import org.mdmi.MessageModel;
 import org.mdmi.Node;
 import org.mdmi.SemanticElement;
 import org.mdmi.SemanticElementRelationship;
-import org.mdmi.SemanticElementSet;
 import org.mdmi.SemanticElementType;
 import org.mdmi.core.ElementValueSet;
 import org.mdmi.core.IElementValue;
@@ -97,6 +96,9 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	public void buildSemanticModel(MessageModel mdl, ISyntaxNode yroot, ElementValueSet eset, Properties properties,
 			JSONObject values) {
 
+		StopWatch watch = new StopWatch();
+		watch.start();
+
 		if (mdl == null || yroot == null || eset == null) {
 			throw new IllegalArgumentException("Null argument!");
 		}
@@ -116,6 +118,9 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 
 		// 1. create all XElementValues
 		getElements((YNode) yroot);
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel getElements" + watch.toSplitString());
 
 		// 2. set relationships
 		List<IElementValue> xes = valueSet.getAllElementValues();
@@ -123,24 +128,70 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			setRelations((XElementValue) xe);
 		}
 
-		// 3. set computed SEs
-		SemanticElementSet set = mdl.getElementSet();
-		Collection<SemanticElement> ses = set.getSemanticElements();
-		for (SemanticElement se : ses) {
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set relationships" +
+					watch.toSplitString());
 
-			if (se.isComputed() && !se.isNullFlavor()) {
-				setComputedValue(se, eset, properties);
-			} else if (se.isComputedOut()) {
-				if (se.getParent() != null) {
-					List<IElementValue> elements = eset.getElementValuesByType(se.getParent());
-					for (IElementValue element : elements) {
-						setComputedOutValue(se, properties, element);
-					}
-				} else {
-					setComputedOutValue(se, properties, null);
+		ArrayList<SemanticElement> computedElementsContainers = new ArrayList<>();
+		// ArrayList<SemanticElement> rootComputedElements = new ArrayList<>();
+
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs a" +
+					watch.toSplitString());
+
+		List<IElementValue> foundElements = new ArrayList<>();
+		// = elementValueSet.getElementValuesByName(computedElementOwner);
+
+		for (IElementValue ses : eset.getAllElementValues()) {
+			if ("container".equalsIgnoreCase(ses.getSemanticElement().getDatatype().getName())) {
+				if (ses.getParent() != null) {
+					computedElementsContainers.add(ses.getSemanticElement());
+					foundElements.add(ses);
 				}
 			}
+
 		}
+
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs b" +
+					watch.toSplitString());
+
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs b foundElements.size() " +
+					foundElements.size());
+
+		for (IElementValue elementValue : foundElements) {
+
+			if (elementValue.getSemanticElement() != null) {
+
+				for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
+
+					if (child.isComputed() && !child.isNullFlavor()) {
+						setComputedValue(elementValue, child, eset, properties);
+					} else if (child.isComputedOut()) {
+						if (child.getParent() != null) {
+							setComputedOutValue(child, properties, elementValue);
+						} else {
+							setComputedOutValue(child, properties, null);
+						}
+					}
+
+				}
+			}
+
+		}
+
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs c" +
+					watch.toSplitString());
+
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs" +
+					watch.toSplitString());
 
 		for (IElementValue elementValue : this.valueSet.getAllElementValues()) {
 
@@ -155,6 +206,12 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			}
 
 		}
+
+		watch.split();
+		logger.info(
+			"Execute preProcess processInboundTargetMessage buildSemanticModel set set parents" +
+					watch.toSplitString());
+
 	}
 
 	/**
@@ -465,6 +522,7 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	private SemanticInterpreter getSemanticInterpreter() {
 		String key = sourceMessageGroup.getName() + "__SEMANTICINTERPRETER__" +
 				sourceMessageGroup.getModels().get(0).getMessageModelName();
+
 		if (!semanticRollupInterpreters.containsKey(key)) {
 			semanticRollupInterpreters.put(key, new SemanticInterpreter(sourceMessageGroup));
 		}
@@ -985,7 +1043,8 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	 * @param properties
 	 */
 	@SuppressWarnings("deprecation")
-	private void setComputedValue(SemanticElement se, ElementValueSet elementValueSet, Properties properties) {
+	private void setComputedValue(IElementValue parentElement, SemanticElement se, ElementValueSet elementValueSet,
+			Properties properties) {
 
 		String rule = se.getComputedValue().getExpression();
 		se.getComputedValue().getLanguage();
@@ -1167,16 +1226,16 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			} else {
 				if (se.getParent() != null) {
 
-					if (elementValueSet.hasElementValuesByName(se.getParent())) {
+					// if (elementValueSet.hasElementValuesByName(se.getParent())) {
 
-						List<IElementValue> elements = elementValueSet.getElementValuesByType(se.getParent());
-						for (IElementValue element : elements) {
-							XElementValue computedInElement = new XElementValue(se, elementValueSet);
-							computedInElement.setParent(element);
-							element.addChild(computedInElement);
-							getSemanticInterpreter().update(se.getName() + "_COMPUTED", computedInElement);
-						}
-					}
+					// List<IElementValue> elements = elementValueSet.getElementValuesByType(se.getParent());
+					// for (IElementValue element : elements) {
+					XElementValue computedInElement = new XElementValue(se, elementValueSet);
+					computedInElement.setParent(parentElement);
+					parentElement.addChild(computedInElement);
+					getSemanticInterpreter().update(se.getName() + "_COMPUTED", computedInElement);
+					// }
+					// }
 				}
 
 			}
@@ -1573,14 +1632,18 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		logger.trace("Root Semantic Element " + rootSemantic.getName());
 
 		watch.split();
-		logger.trace("Set up: " + watch.toSplitString());
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel one : " +
+					watch.toSplitString());
 
 		for (IElementValue rootElementValue : elementValueSet.getElementValuesByName(rootSemantic)) {
 			fillInTheBlanks.put(rootSemantic.getName(), (XElementValue) rootElementValue);
 		}
 
 		watch.split();
-		logger.trace("fillInTheBlanks: " + watch.toSplitString());
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel fillInTheBlanks : " +
+					watch.toSplitString());
 
 		// update all semantic containment
 
@@ -1617,7 +1680,10 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace("update all semantic containment: " + watch.toSplitString());
+
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel update all semantic containment : " +
+					watch.toSplitString());
 
 		HashMap<String, IElementValue> containers = new HashMap<>();
 
@@ -1627,12 +1693,16 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 
 		walkComputedIn(mdl, elementValueSet, properties, containers);
 		watch.split();
-		logger.trace("walkComputedIn: " + watch.toSplitString());
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn : " +
+					watch.toSplitString());
 
 		walkNullFlavor(elementValueSet, properties);
 
 		watch.split();
-		logger.trace("walkNullFlavor: " + watch.toSplitString());
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkNullFlavor : " +
+					watch.toSplitString());
 
 	}
 
@@ -1654,20 +1724,37 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	void walkComputedIn(MessageModel mdl, ElementValueSet elementValueSet, Properties properties,
 			HashMap<String, IElementValue> containers) {
 
+		StopWatch watch = new StopWatch();
+		watch.start();
+
 		ArrayList<SemanticElement> computedElementsContainers = new ArrayList<>();
 		ArrayList<SemanticElement> rootComputedElements = new ArrayList<>();
+
+		List<IElementValue> foundElements = new ArrayList<>();
+		// = elementValueSet.getElementValuesByName(computedElementOwner);
 
 		for (IElementValue ses : elementValueSet.getAllElementValues()) {
 			if ("container".equalsIgnoreCase(ses.getSemanticElement().getDatatype().getName())) {
 				if (ses.getParent() != null) {
 					computedElementsContainers.add(ses.getSemanticElement());
+					foundElements.add(ses);
+				}
+			} else {
+				for (SemanticElement sec : ses.getSemanticElement().getChildren()) {
+					if (sec.isComputedIn()) {
+						foundElements.add(ses);
+						break;
+					}
+
 				}
 			}
 
 		}
 
-		StopWatch watch = new StopWatch();
-		watch.start();
+		watch.split();
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers : " +
+					watch.toSplitString());
 
 		// for (SemanticElement semanticElement : mdl.getElementSet().getSemanticElements()) {
 		// if (semanticElement.isComputedIn()) {
@@ -1681,7 +1768,7 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		// }
 		// }
 
-		ListIterator<IElementValue> iterator = elementValueSet.getAllElementValues().listIterator();
+		// ListIterator<IElementValue> iterator = elementValueSet.getAllElementValues().listIterator();
 
 		// while (iterator.hasNext()) {
 		// IElementValue elementValue = iterator.next();
@@ -1691,56 +1778,59 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		// }
 		// }
 
-		for (SemanticElement computedElementOwner : computedElementsContainers) {
+		// for (SemanticElement computedElementOwner : computedElementsContainers) {
 
-			// if (computedElementOwner.getParent() != null &&
-			// elementValueSet.hasElementValuesByName(computedElementOwner.getParent())) {
+		// if (computedElementOwner.getParent() != null &&
+		// elementValueSet.hasElementValuesByName(computedElementOwner.getParent())) {
 
-			List<IElementValue> foundElements = elementValueSet.getElementValuesByName(computedElementOwner);
+		for (IElementValue elementValue : foundElements) {
 
-			for (IElementValue elementValue : foundElements) {
+			if (elementValue.getSemanticElement() != null) {
 
-				if (elementValue.getSemanticElement() != null) {
+				for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
 
-					for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
+					if (child.isComputedIn()) {
 
-						if (child.isComputedIn()) {
-
-							boolean ran = false;
-							for (IElementValue ce : elementValue.getChildren()) {
-								if (ce.getSemanticElement().getName().equals(child.getName())) {
-									ran = true;
-								}
+						boolean ran = false;
+						for (IElementValue ce : elementValue.getChildren()) {
+							if (ce.getSemanticElement().getName().equals(child.getName())) {
+								ran = true;
 							}
+						}
 
-							if (ran) {
-								continue;
-							}
+						if (ran) {
+							continue;
+						}
 
-							logger.trace("Process computedin " + child.getName());
-							String rule = child.getComputedInValue().getExpression();
-							String lang = child.getComputedInValue().getLanguage();
-							XElementValue computedInElement = new XElementValue(child, elementValueSet);
-							elementValue.addChild(computedInElement);
-							if ("Value".equals(lang)) {
-								logger.trace("Process computedin value " + rule);
-								computedInElement.getXValue().setValue(rule);
-							} else {
-								logger.trace("Process computedin rule " + rule);
-								computedInElement.getParent().getUniqueId();
-								this.getSemanticInterpreter().execute(
-									child.getName() + "_COMPUTEDIN", computedInElement, properties);
-							}
-
+						logger.trace("Process computedin " + child.getName());
+						String rule = child.getComputedInValue().getExpression();
+						String lang = child.getComputedInValue().getLanguage();
+						XElementValue computedInElement = new XElementValue(child, elementValueSet);
+						elementValue.addChild(computedInElement);
+						if ("Value".equals(lang)) {
+							logger.trace("Process computedin value " + rule);
+							computedInElement.getXValue().setValue(rule);
+						} else {
+							logger.trace("Process computedin rule " + rule);
+							computedInElement.getParent().getUniqueId();
+							this.getSemanticInterpreter().execute(
+								child.getName() + "_COMPUTEDIN", computedInElement, properties);
 						}
 
 					}
-				}
 
+				}
 			}
-			// }
 
 		}
+		// }
+
+		// }
+
+		watch.split();
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers  process : " +
+					watch.toSplitString());
 
 		for (SemanticElement child : rootComputedElements) {
 			logger.trace("Walk for computedin " + child.getName());
@@ -1771,22 +1861,9 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace("call computed in: " + watch.toSplitString());
-
-		watch.split();
-		logger.trace("walk computedin for children computed in: " + watch.toSplitString());
-
-		/**
-		 * @TODO - This is required to fire any compute ins when the path between the value has a local container
-		 *       This only supports on local container need to support multiple local contianers
-		 */
-
-		watch.split();
-		logger.trace("locals : " + watch.toSplitString());
-
-		watch.stop();
-
-		logger.trace("walk computed in time : " + watch.getTime());
+		logger.info(
+			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn rootComputedElements  process : " +
+					watch.toSplitString());
 
 	}
 

@@ -75,6 +75,8 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 
 	private static String password = "";
 
+	public static boolean checked = false;
+
 	public static boolean processTerminology = false;
 
 	private static String userName = "";
@@ -274,6 +276,10 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 	@Override
 	public boolean healthCheck() {
 
+		if (checked) {
+			return processTerminology;
+		}
+		checked = true;
 		Timeout connectionTimeout = Timeout.ofSeconds(2); // Time to establish connection
 		Timeout responseTimeout = Timeout.ofSeconds(4); // Time waiting for response
 

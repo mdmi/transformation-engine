@@ -562,6 +562,12 @@ public class MDMIDomainDictionaryReferenceImpl extends EObjectImpl implements MD
 	 */
 	@Override
 	public MDMIBusinessElementReference getBusinessElement(String name) {
+
+		for (MDMIBusinessElementReference be : this.getBusinessElements()) {
+			if (name.equals(be.getName())) {
+				return be;
+			}
+		}
 		// TODO Auto-generated method stub
 		return null;
 	}
