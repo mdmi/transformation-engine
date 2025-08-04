@@ -611,7 +611,7 @@ public class MdmiUow implements Runnable {
 
 						if (targetSementicReferences.contains(targetSementicElement.getName())) {
 							boolean checkReferenceContainment = false;
-							if (tmo.getRule().startsWith("REFERENCE:")) {
+							if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
 
 								String[] referenceParameters = tmo.getRule().split(":");
 								String containmentParameter = referenceParameters[2];
@@ -689,9 +689,7 @@ public class MdmiUow implements Runnable {
 
 		ArrayList<SemanticElement> singles = new ArrayList<>();
 
-		for (
-
-		SemanticElement semanticElement : transferInfo.targetModel.getModel().getElementSet().getSemanticElements()) {
+		for (SemanticElement semanticElement : transferInfo.targetModel.getModel().getElementSet().getSemanticElements()) {
 			if (!semanticElement.isMultipleInstances()) {
 				singles.add(semanticElement);
 			}
@@ -709,10 +707,7 @@ public class MdmiUow implements Runnable {
 		 * If the single parent has content - populate the appropriate single instances per container
 		 *
 		 */
-		for (
-
-		SemanticElement single : singles) {
-
+		for (SemanticElement single : singles) {
 			SemanticElement theSingleParent = single.getParent();
 			while (theSingleParent != null) {
 				if (theSingleParent.getSemanticElementType().equals(SemanticElementType.NORMAL)) {
@@ -845,6 +840,19 @@ public class MdmiUow implements Runnable {
 
 		}
 
+		for (Object o : impl.refereneces.keySet()) {
+			XDataStruct xValue = (XDataStruct) o;
+			XElementValue foo = impl.refereneces.get(o);
+			IElementValue bar = sourcetotarget.get(impl.refereneces.get(o)).get(0);
+			ArrayList<IElementValue> targets = sourcetotarget.get(impl.refereneces.get(o));
+			for (IElementValue target : targets) {
+				if ("Container".equals(target.getSemanticElement().getDatatype().getName())) {
+					String guidValue = "urn:uuid:" + target.getUniqueId();
+					xValue.setValueSafely("reference.value", guidValue);
+				}
+			}
+		}
+
 		ListIterator<IElementValue> iterator = trgSemanticModel.getAllElementValues().listIterator();
 
 		while (iterator.hasNext()) {
@@ -951,19 +959,19 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		for (
-
-		String key : impl.sourceDatamapInterpreter.exceptions.keySet()) {
-			logger.error(key);
-			logger.error(impl.sourceDatamapInterpreter.exceptions.get(key).getMessage());
-		}
-
-		for (
-
-		String key : impl.targetDatamapInterpreter.exceptions.keySet()) {
-			logger.error(key);
-			logger.error(impl.targetDatamapInterpreter.exceptions.get(key).getMessage());
-		}
+		// for (
+		//
+		// String key : impl.sourceDatamapInterpreter.exceptions.keySet()) {
+		// logger.error(key);
+		// logger.error(impl.sourceDatamapInterpreter.exceptions.get(key).getMessage());
+		// }
+		//
+		// for (
+		//
+		// String key : impl.targetDatamapInterpreter.exceptions.keySet()) {
+		// logger.error(key);
+		// logger.error(impl.targetDatamapInterpreter.exceptions.get(key).getMessage());
+		// }
 
 		watch.split();
 		logger.trace("Done : " + watch.toSplitString());

@@ -298,7 +298,7 @@ class ConversionImpl {
 		return false;
 	}
 
-	// HashMap<String, String> refereneces = new HashMap<>();
+	public HashMap<Object, XElementValue> refereneces = new HashMap<>();
 
 	void execMapFromMDMI(XElementValue sourceSemanticElement, XValue v, XElementValue trg, ConversionRule toSE) {
 
@@ -462,6 +462,10 @@ class ConversionImpl {
 				if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
 					guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
 
+				} else {
+
+					refereneces.put(target, sourceSemanticElement);
+					System.err.println("asdfasdf");
 				}
 
 				guid.setValue(guidValue);
