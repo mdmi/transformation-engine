@@ -192,7 +192,16 @@ class ConversionImpl {
 		}
 
 		if (!datamapInterpreters.containsKey(targetKey)) {
-			datamapInterpreters.put(targetKey, new DatamapInterpreter(target));
+
+			MI mi = Mdmi.INSTANCE().getResolver().getMaps().get(
+				target.getName() + "." + target.getModels().get(0).getMessageModelName());
+
+			if (!StringUtils.isEmpty(mi.datatypemappings)) {
+				datamapInterpreters.put(targetKey, new DatamapInterpreter(mi.datatypemappings));
+			} else {
+				datamapInterpreters.put(targetKey, new DatamapInterpreter(target));
+			}
+			// datamapInterpreters.put(targetKey, new DatamapInterpreter(target));
 		}
 
 		sourceDatamapInterpreter = datamapInterpreters.get(sourceKey);
@@ -382,109 +391,58 @@ class ConversionImpl {
 							toSE.getBusinessElement().getName());
 			}
 		} else if (toSE.getRule().startsWith("REFERENCE:")) {
-
-			String[] referenceParameters = toSE.getRule().split(":");
-			if (referenceParameters.length == 4) {
-				String functionName = referenceParameters[1];
-				String sourceName = referenceParameters[3];
-
-				// for (IElementValue c : sourceSemanticElement.getChildren()) {
-				// for (ConversionRule cr : c.getSemanticElement().getMapFromMdmi()) {
-
-				// if (sourceName.equals(cr.getBusinessElement().getName())) {
-
-				// MDMIBusinessElementReference theBE = cr.getBusinessElement();
-				// //
-				// logger.trace("Found Reference Element " + cr.getBusinessElement().getName());
-				//
-				if (trg.getXValue().getValues().size() == 0) {
-					if ((trg.getXValue().getDatatype() instanceof DTCStructured)) {
-						XDataStruct xs = new XDataStruct(trg.getXValue());
-						trg.getXValue().addValue(xs);
-					}
-					//
+			if (trg.getXValue().getValues().size() == 0) {
+				if ((trg.getXValue().getDatatype() instanceof DTCStructured)) {
+					XDataStruct xs = new XDataStruct(trg.getXValue());
+					trg.getXValue().addValue(xs);
 				}
-				//
-				// Object source = null;
-				//
-				// if (v.getDatatype().isSimple()) {
-				// source = v;
-				// } else {
-				// source = v.getValue();
-				// }
-				//
-				// XValue xv = new XValue(theBE.getName(), theBE.getReferenceDatatype());
-				// String thrRule = "";
-				//
-				// XElementValue foo = (XElementValue) c;
-				//
-				// for (ConversionRule cr2 : foo.getSemanticElement().getMapToMdmi()) {
-				// if (sourceName.equals(cr2.getBusinessElement().getName())) {
-				// thrRule = cr2.getRule();
-				// }
-				// }
+			}
 
-				// XValue v2 = ((XElementValue) c).getXValue();
-				// if (v2.getDatatype().isSimple()) {
-				// source = v2;
-				// } else {
-				// source = v2.getValue();
-				// }
+			boolean executed = false;
 
-				boolean executed = false;
-				// if (xv.getValue() == null) {
-				// executed = sourceDatamapInterpreter.execute(
-				// parseFunctionName(thrRule), source, xv, targetProperties, toSE);
-				//
-				// // executed = sourceDatamapInterpreter.execute(
-				// // parseFunctionName(toBE.getRule()), src.value(), v, sourceProperties, toBE);
-				//
-				// } else {
-				// executed = sourceDatamapInterpreter.execute(
-				// parseFunctionName(thrRule), source, xv.getValue(), targetProperties, toSE);
-				// // executed = sourceDatamapInterpreter.execute(
-				// // parseFunctionName(toBE.getRule()), src.value(), xv.getValue(), sourceProperties, toBE);
-				// }
+			Object target = null;
+			if (trg.getXValue().getDatatype().isSimple()) {
+				target = trg;
+			} else {
+				target = trg.value();
+			}
 
-				Object target = null;
-				if (trg.getXValue().getDatatype().isSimple()) {
-					target = trg;
+			DTSPrimitive primitive = MDMIFactory.eINSTANCE.createDTSPrimitive(Primitive.String);
+
+			XValue guid = new XValue("GUID", primitive);
+
+			String guidValue = "MISSING";
+
+			if (toSE.getRule().endsWith("REVERSE")) {
+
+				if (sourceSemanticElement.getParent() != null &&
+						sourcetotarget.containsKey(sourceSemanticElement.getParent())) {
+					guidValue = "urn:uuid:" +
+							sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
+
 				} else {
-					target = trg.value();
+					refereneces.put(target, (XElementValue) sourceSemanticElement.getParent());
 				}
 
-				DTSPrimitive primitive = MDMIFactory.eINSTANCE.createDTSPrimitive(Primitive.String);
-
-				XValue guid = new XValue("GUID", primitive);
-
-				String guidValue = "MISSING";
-
+			} else {
 				if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
 					guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
 
 				} else {
-
 					refereneces.put(target, sourceSemanticElement);
-					System.err.println("asdfasdf");
 				}
+			}
 
-				guid.setValue(guidValue);
+			guid.setValue(guidValue);
 
-				executed = targetDatamapInterpreter.execute(
-					"mapStringToFHIR_Reference", guid, target, targetProperties, toSE);
+			executed = targetDatamapInterpreter.execute(
+				"mapStringToFHIR_Reference", guid, target, targetProperties, toSE);
 
-				if (!executed) {
-
-					logger.error(
-						"Unable To Execute " + parseFunctionName(toSE.getRule()) + " at " +
-								getFullPathForNode(toSE.getOwner().getSyntaxNode()) + " for " +
-								toSE.getBusinessElement().getName());
-				}
-
-				// }
-
-				// }
-				// }
+			if (!executed) {
+				logger.error(
+					"Unable To Execute " + parseFunctionName(toSE.getRule()) + " at " +
+							getFullPathForNode(toSE.getOwner().getSyntaxNode()) + " for " +
+							toSE.getBusinessElement().getName());
 			}
 
 		} else

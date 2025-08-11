@@ -349,7 +349,6 @@ public class MdmiUow implements Runnable {
 			}
 
 			if (se.equals(se.getParent())) {
-				System.err.println(se.getName());
 				return;
 			}
 			getMappedStack(se.getParent(), mappedParentStack);
@@ -614,7 +613,7 @@ public class MdmiUow implements Runnable {
 							if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
 
 								String[] referenceParameters = tmo.getRule().split(":");
-								String containmentParameter = referenceParameters[2];
+								String containmentParameter = referenceParameters[1];
 
 								if (sourceElementValue.getParent() != null) {
 									for (ConversionRule zzz : sourceElementValue.getParent().getSemanticElement().getMapToMdmi()) {

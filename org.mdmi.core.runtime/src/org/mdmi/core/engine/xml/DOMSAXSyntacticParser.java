@@ -507,9 +507,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					/**
 					 * Skip an computedIn nodes as they are local and not matched as part of the semantics
 					 */
-					if (node.getSemanticElement() != null && node.getSemanticElement().isComputedIn()) {
-						return false;
-					}
 
 					return isMatch(sb.toString(), node);
 				}
@@ -1091,7 +1088,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 		}
 		String elementName = "";
 		if (node instanceof Element) {
-			elementName = ((Element) node).getLocalName();
+			elementName = node.getLocalName();
 		}
 		org.w3c.dom.Node parent = node.getParentNode();
 		if (parent == null) {

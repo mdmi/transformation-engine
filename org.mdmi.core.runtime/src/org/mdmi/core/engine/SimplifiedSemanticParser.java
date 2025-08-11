@@ -1562,16 +1562,6 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace("update all semantic containment: " + watch.toSplitString());
-
-		HashMap<String, IElementValue> containers = new HashMap<>();
-
-		for (IElementValue rootElementValue : elementValueSet.getElementValuesByName(rootSemantic)) {
-			containers.put(rootElementValue.getSemanticElement().getName(), rootElementValue);
-		}
-
-		normalizeSemantics(mdl, elementValueSet, properties, containers);
-		watch.split();
 		logger.trace("normalizeSemantics: " + watch.toSplitString());
 
 		for (IElementValue elementValue : elementValueSet.getAllElementValues()) {
@@ -1691,6 +1681,10 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			containers.put(rootElementValue.getSemanticElement().getName(), rootElementValue);
 		}
 
+		watch.split();
+		logger.trace("update all semantic containment: " + watch.toSplitString());
+		normalizeSemantics(mdl, elementValueSet, properties, containers);
+
 		walkComputedIn(mdl, elementValueSet, properties, containers);
 		watch.split();
 		logger.info(
@@ -1721,6 +1715,35 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 
 	}
 
+	void collectComputedIn(List<SemanticElement> foundElements, SemanticElement se) {
+		for (SemanticElement sec : se.getChildren()) {
+			if (sec.isComputedIn()) {
+				foundElements.add(sec);
+			}
+		}
+
+	}
+
+	void walkElements(List<ComputedIn> computedElements, IElementValue element, int count) {
+
+		for (IElementValue child : element.getChildren()) {
+			walkElements(computedElements, child, count + 5);
+		}
+
+		ComputedIn computedIn = new ComputedIn();
+		computedIn.elementValue = element;
+		collectComputedIn(computedIn.foundElements, element.getSemanticElement());
+
+		computedElements.add(computedIn);
+
+	}
+
+	public static class ComputedIn {
+		public IElementValue elementValue;
+
+		public List<SemanticElement> foundElements = new ArrayList<>();
+	}
+
 	void walkComputedIn(MessageModel mdl, ElementValueSet elementValueSet, Properties properties,
 			HashMap<String, IElementValue> containers) {
 
@@ -1728,25 +1751,17 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		watch.start();
 
 		ArrayList<SemanticElement> computedElementsContainers = new ArrayList<>();
+
+		List<ComputedIn> computedElements = new ArrayList<>();
+
 		ArrayList<SemanticElement> rootComputedElements = new ArrayList<>();
 
 		List<IElementValue> foundElements = new ArrayList<>();
-		// = elementValueSet.getElementValuesByName(computedElementOwner);
 
 		for (IElementValue ses : elementValueSet.getAllElementValues()) {
-			if ("container".equalsIgnoreCase(ses.getSemanticElement().getDatatype().getName())) {
-				if (ses.getParent() != null) {
-					computedElementsContainers.add(ses.getSemanticElement());
-					foundElements.add(ses);
-				}
-			} else {
-				for (SemanticElement sec : ses.getSemanticElement().getChildren()) {
-					if (sec.isComputedIn()) {
-						foundElements.add(ses);
-						break;
-					}
 
-				}
+			if (ses.getParent() == null) {
+				walkElements(computedElements, ses, 1);
 			}
 
 		}
@@ -1756,32 +1771,30 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers : " +
 					watch.toSplitString());
 
-		// for (SemanticElement semanticElement : mdl.getElementSet().getSemanticElements()) {
-		// if (semanticElement.isComputedIn()) {
-		//
-		// if (semanticElement.getParent() != null && semanticElement.getParent().getParent() != null) {
-		// computedElementsContainers.add(semanticElement);
-		// }
-		// if (semanticElement.getParent() != null && semanticElement.getParent().getParent() == null) {
-		// rootComputedElements.add(semanticElement);
-		// }
-		// }
-		// }
+		for (ComputedIn computedIn : computedElements) {
 
-		// ListIterator<IElementValue> iterator = elementValueSet.getAllElementValues().listIterator();
+			for (SemanticElement se : computedIn.foundElements) {
 
-		// while (iterator.hasNext()) {
-		// IElementValue elementValue = iterator.next();
-		// if (elementValue.getSemanticElement() != null) {
-		//
-		// normalizeSemanticContainers(elementValueSet, elementValue, iterator, containers);
-		// }
-		// }
+				logger.trace("Process computedin " + se.getName());
+				String rule = se.getComputedInValue().getExpression();
+				String lang = se.getComputedInValue().getLanguage();
+				XElementValue computedInElement = new XElementValue(se, elementValueSet);
 
-		// for (SemanticElement computedElementOwner : computedElementsContainers) {
+				computedIn.elementValue.addChild(computedInElement);
+				computedInElement.setParent(computedIn.elementValue);
 
-		// if (computedElementOwner.getParent() != null &&
-		// elementValueSet.hasElementValuesByName(computedElementOwner.getParent())) {
+				if ("Value".equals(lang)) {
+					logger.trace("Process computedin value " + rule);
+					computedInElement.getXValue().setValue(rule);
+				} else {
+					logger.trace("Process computedin rule " + rule);
+					computedInElement.getParent().getUniqueId();
+					this.getSemanticInterpreter().execute(se.getName() + "_COMPUTEDIN", computedInElement, properties);
+				}
+
+			}
+
+		}
 
 		for (IElementValue elementValue : foundElements) {
 
