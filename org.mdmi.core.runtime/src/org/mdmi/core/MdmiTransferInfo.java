@@ -41,14 +41,9 @@ public class MdmiTransferInfo {
 	/** A list of target element names to be transfered. May be Semantic Element names or Business Element names, depending upon the useDictionary. */
 	public ArrayList<MDMIBusinessElementReference> targetElements;
 
-	/** If true, the names in the targetElements are Semantic Element names, otherwise they are Business Element names. */
-	public boolean useDictionary;
-
 	public Properties sourceProperties = new Properties();
 
 	public Properties targetProperties = new Properties();
-
-	public String location = null;
 
 	public JSONObject sourceValues;
 

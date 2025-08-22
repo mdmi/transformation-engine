@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -47,7 +48,6 @@ import org.mdmi.core.MdmiResolver.MI;
 import org.mdmi.core.MdmiValueSet;
 import org.mdmi.core.MdmiValueSetMap;
 import org.mdmi.core.MdmiValueSetsHandler;
-import org.mdmi.core.engine.Conversion.ConversionInfo;
 import org.mdmi.core.engine.ITerminologyTransform.TransformCode;
 import org.mdmi.core.engine.terminology.FHIRTerminologyTransform;
 import org.slf4j.Logger;
@@ -140,14 +140,14 @@ class ConversionImpl {
 
 	ArrayList<SEERvalues> theSeerValues = new ArrayList<>();
 
-	boolean convert(XElementValue sourceSemanticElement, ConversionInfo ci, XElementValue targetSemanticElement)
+	boolean convert(XElementValue sourceSemanticElement, ConversionInvocation ci, XElementValue targetSemanticElement)
 			throws Exception {
 
 		logger.trace("convert business element " + ci.srcBER.getName());
 
-		ConversionRule mapToMDMI = Conversion.getToBE(sourceSemanticElement.getSemanticElement(), ci.srcBER);
+		ConversionRule mapToMDMI = ConversionImpl.getToBE(sourceSemanticElement.getSemanticElement(), ci.srcBER);
 
-		ConversionRule mapFromMDMI = Conversion.getToSE(targetSemanticElement.getSemanticElement(), ci.trgBER);
+		ConversionRule mapFromMDMI = ConversionImpl.getToSE(targetSemanticElement.getSemanticElement(), ci.trgBER);
 
 		XValue xv = new XValue(
 			mapToMDMI.getBusinessElement().getName(), mapToMDMI.getBusinessElement().getReferenceDatatype());
@@ -777,6 +777,28 @@ class ConversionImpl {
 
 			}
 		}
+	}
+
+	static ConversionRule getToSE(SemanticElement src, MDMIBusinessElementReference ber) {
+		Collection<ConversionRule> toBEs = src.getMapFromMdmi();
+		for (Iterator<ConversionRule> it = toBEs.iterator(); it.hasNext();) {
+			ConversionRule t = it.next();
+			if (t.getBusinessElement().getUniqueIdentifier().equals(ber.getUniqueIdentifier())) {
+				return t;
+			}
+		}
+		return null;
+	}
+
+	static ConversionRule getToBE(SemanticElement trg, MDMIBusinessElementReference ber) {
+		Collection<ConversionRule> toSEs = trg.getMapToMdmi();
+		for (Iterator<ConversionRule> it = toSEs.iterator(); it.hasNext();) {
+			ConversionRule t = it.next();
+			if (t.getBusinessElement().getUniqueIdentifier().equals(ber.getUniqueIdentifier())) {
+				return t;
+			}
+		}
+		return null;
 	}
 
 } // ConversionImpl

@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-SymbolicName: org.mdmi.ecore;singleton:=true
 Automatic-Module-Name: org.mdmi.ecore
-Bundle-Version: 4.1.0.qualifier
+Bundle-Version: 4.1.1.qualifier
 Bundle-ClassPath: .
 Bundle-Activator: org.mdmi.ecore.MDMIPlugin$Implementation
 Bundle-Vendor: %providerName

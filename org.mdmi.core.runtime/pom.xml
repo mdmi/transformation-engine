@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>org.mdmi</groupId>
 		<artifactId>org.mdmi.pom</artifactId>
-		<version>4.1.0-SNAPSHOT</version>
+		<version>4.1.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>org.mdmi.core.runtime</artifactId>
 	<packaging>eclipse-plugin</packaging>

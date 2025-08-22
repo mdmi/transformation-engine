@@ -635,7 +635,7 @@ public class MdmiUow implements Runnable {
 
 							try {
 								@SuppressWarnings("deprecation")
-								org.mdmi.core.engine.Conversion.ConversionInfo ci = new org.mdmi.core.engine.Conversion.ConversionInfo(
+								org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
 									targetSementicElement, tme.getBusinessElement(), tmo.getBusinessElement());
 								impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
 
@@ -766,7 +766,7 @@ public class MdmiUow implements Runnable {
 								XElementValue singleElementValue = new XElementValue(single, trgSemanticModel);
 								try {
 									@SuppressWarnings("deprecation")
-									org.mdmi.core.engine.Conversion.ConversionInfo ci = new org.mdmi.core.engine.Conversion.ConversionInfo(
+									org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
 										single, sourceRI, conversionRule.getBusinessElement());
 									impl.convert((XElementValue) elementValue, ci, singleElementValue);
 

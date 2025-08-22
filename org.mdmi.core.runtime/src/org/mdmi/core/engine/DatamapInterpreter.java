@@ -129,7 +129,7 @@ public class DatamapInterpreter {
 			}
 			engine.eval(compile(sb.toString()));
 		} catch (ScriptException e) {
-			logger.error("INVALID JAVA SCRIPT", e.getMessage());
+			logger.error("aaaaaaINVALID JAVA SCRIPT", e.getMessage());
 		}
 
 		inv = (Invocable) engine;
@@ -151,7 +151,9 @@ public class DatamapInterpreter {
 
 			engine.eval(compile(datatypemappings.toString()));
 		} catch (ScriptException e) {
-			logger.error("INVALID JAVA SCRIPT", e.getMessage());
+			System.err.println(e.getMessage());
+			System.err.println(datatypemappings.toString());
+			logger.error("bbbbbINVALID JAVA SCRIPT", e.getMessage());
 		}
 
 		inv = (Invocable) engine;

@@ -4,7 +4,7 @@ Bundle-ActivationPolicy: lazy
 Bundle-Name: MDMI Runtime Plug-In
 Bundle-Vendor: MDIX, www.mdixinc.com
 Bundle-SymbolicName: org.mdmi.core.runtime;singleton:=true
-Bundle-Version: 4.1.0.qualifier
+Bundle-Version: 4.1.1.qualifier
 Bundle-ClassPath: .
 Require-Bundle: org.apache.commons.cli,
  org.apache.commons.lang3,
