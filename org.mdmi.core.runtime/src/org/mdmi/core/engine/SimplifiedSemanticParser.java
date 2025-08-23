@@ -28,11 +28,6 @@ import org.mdmi.Bag;
 import org.mdmi.Choice;
 import org.mdmi.DTCChoice;
 import org.mdmi.DTCStructured;
-import org.mdmi.DTExternal;
-import org.mdmi.DTSDerived;
-import org.mdmi.DTSEnumerated;
-import org.mdmi.DTSPrimitive;
-import org.mdmi.EnumerationLiteral;
 import org.mdmi.Field;
 import org.mdmi.LeafSyntaxTranslator;
 import org.mdmi.MDMIDatatype;
@@ -48,7 +43,6 @@ import org.mdmi.core.ISemanticParser;
 import org.mdmi.core.ISyntaxNode;
 import org.mdmi.core.MdmiException;
 import org.mdmi.core.MdmiUtil;
-import org.mdmi.impl.MDMIPackageImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -547,44 +541,48 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-			XDT xdt = XDT.fromString(format);
-			if (dt.isPrimitive()) {
-				DTSPrimitive pdt = (DTSPrimitive) dt;
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xe.getXValue().addValue(o);
-			} else if (dt.isDerived()) {
-				DTSDerived ddt = (DTSDerived) dt;
-				DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xe.getXValue().addValue(o);
-			} else if (dt.isExternal()) {
-				DTSPrimitive pdt = MDMIPackageImpl.STRING;
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xe.getXValue().addValue(o);
-				// }
-			} else if ("InstanceIdentifier".equals(dt.getName())) {
-				XDataStruct xs = new XDataStruct(xe.getXValue(), true);
-				xs.setValueSafely("extension", value);
-				xe.getXValue().addValue(xs);
-			} else if ("Telecom".equals(dt.getName())) {
-				XDataStruct xs = new XDataStruct(xe.getXValue(), true);
-				xs.setValueSafely("value", value);
-				xe.getXValue().addValue(xs);
 
-			} else {
-				DTSEnumerated edt = (DTSEnumerated) dt;
-				EnumerationLiteral el = edt.getLiteralByCode(value);
-				xe.getXValue().addValue(el);
-			}
+			xe.getXValue().addValue(value);
+
+			// XDT xdt = XDT.fromString(format);
+			//
+			// if (dt.isPrimitive()) {
+			// DTSPrimitive pdt = (DTSPrimitive) dt;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// } else if (dt.isDerived()) {
+			// DTSDerived ddt = (DTSDerived) dt;
+			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// } else if (dt.isExternal()) {
+			// DTSPrimitive pdt = MDMIPackageImpl.STRING;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// // }
+			// } else if ("InstanceIdentifier".equals(dt.getName())) {
+			// XDataStruct xs = new XDataStruct(xe.getXValue(), true);
+			// xs.setValueSafely("extension", value);
+			// xe.getXValue().addValue(xs);
+			// } else if ("Telecom".equals(dt.getName())) {
+			// XDataStruct xs = new XDataStruct(xe.getXValue(), true);
+			// xs.setValueSafely("value", value);
+			// xe.getXValue().addValue(xs);
+			//
+			// } else {
+			// DTSEnumerated edt = (DTSEnumerated) dt;
+			// EnumerationLiteral el = edt.getLiteralByCode(value);
+			// xe.getXValue().addValue(el);
+			// }
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -611,41 +609,42 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-			XDT xdt = XDT.fromString(format);
-			if (dt.isPrimitive()) {
-				DTSPrimitive pdt = (DTSPrimitive) dt;
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xe.getXValue().addValue(o);
-			} else if (dt.isDerived()) {
-				DTSDerived ddt = (DTSDerived) dt;
-				DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xe.getXValue().addValue(o);
-			} else if (dt.isExternal()) {
-				DTExternal dte = (DTExternal) dt;
-				String uri = dte.getTypeSpec();
-				if (uri != null) {
-					// Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
-					// xe.getXValue().addValue(o);
-				} else {
-					DTSPrimitive pdt = MDMIPackageImpl.STRING;
-					if (xdt == null) {
-						xdt = XDT.fromPDT(pdt);
-					}
-					Object o = XDT.convertFromString(xdt, value, format, pdt);
-					xe.getXValue().addValue(o);
-				}
-			} else {
-				DTSEnumerated edt = (DTSEnumerated) dt;
-				EnumerationLiteral el = edt.getLiteralByCode(value);
-				xe.getXValue().addValue(el);
-			}
+			// XDT xdt = XDT.fromString(format);
+			xe.getXValue().addValue(value);
+			// if (dt.isPrimitive()) {
+			// DTSPrimitive pdt = (DTSPrimitive) dt;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// } else if (dt.isDerived()) {
+			// DTSDerived ddt = (DTSDerived) dt;
+			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// } else if (dt.isExternal()) {
+			// DTExternal dte = (DTExternal) dt;
+			// String uri = dte.getTypeSpec();
+			// if (uri != null) {
+			// // Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
+			// // xe.getXValue().addValue(o);
+			// } else {
+			// DTSPrimitive pdt = MDMIPackageImpl.STRING;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xe.getXValue().addValue(o);
+			// }
+			// } else {
+			// DTSEnumerated edt = (DTSEnumerated) dt;
+			// EnumerationLiteral el = edt.getLiteralByCode(value);
+			// xe.getXValue().addValue(el);
+			// }
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -865,45 +864,45 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-			XDT xdt = XDT.fromString(format);
-			if (xdt != null) {
-				format = null; // null the format so it does not get into the
-				// conversions
-			}
-			if (dt.isPrimitive()) {
-				DTSPrimitive pdt = (DTSPrimitive) dt;
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xv.addValue(o);
-			} else if (dt.isDerived()) {
-				DTSDerived ddt = (DTSDerived) dt;
-				DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				Object o = XDT.convertFromString(xdt, value, format, pdt);
-				xv.addValue(o);
-			} else if (dt.isExternal()) {
-				// DTExternal dte = (DTExternal) dt;
-				// String uri = dte.getTypeSpec();
-				// // if (uri != null) {
-				// // Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
-				// // xv.addValue(o);
-				// // } else {
-				// DTSPrimitive pdt = MDMIPackageImpl.STRING;
-				// if (xdt == null) {
-				// xdt = XDT.fromPDT(pdt);
-				// }
-				// Object o = XDT.convertFromString(xdt, value, format, pdt);
-				// xv.addValue(o);
-				// // }
-			} else {
-				DTSEnumerated edt = (DTSEnumerated) dt;
-				EnumerationLiteral el = edt.getLiteralByCode(value);
-				xv.addValue(el);
-			}
+			// XDT xdt = XDT.fromString(format);
+			// if (xdt != null) {
+			// format = null; // null the format so it does not get into the
+			// // conversions
+			// }
+			// if (dt.isPrimitive()) {
+			// DTSPrimitive pdt = (DTSPrimitive) dt;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			xv.addValue(value);
+			// } else if (dt.isDerived()) {
+			// DTSDerived ddt = (DTSDerived) dt;
+			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// xv.addValue(o);
+			// } else if (dt.isExternal()) {
+			// // DTExternal dte = (DTExternal) dt;
+			// // String uri = dte.getTypeSpec();
+			// // // if (uri != null) {
+			// // // Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
+			// // // xv.addValue(o);
+			// // // } else {
+			// // DTSPrimitive pdt = MDMIPackageImpl.STRING;
+			// // if (xdt == null) {
+			// // xdt = XDT.fromPDT(pdt);
+			// // }
+			// // Object o = XDT.convertFromString(xdt, value, format, pdt);
+			// // xv.addValue(o);
+			// // // }
+			// } else {
+			// DTSEnumerated edt = (DTSEnumerated) dt;
+			// EnumerationLiteral el = edt.getLiteralByCode(value);
+			// xv.addValue(el);
+			// }
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -1300,44 +1299,45 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		}
 		try {
 			String format = yleaf.getLeaf().getFormat();
+			yleaf.setValue((String) value);
 
-			XDT xdt = XDT.fromString(format);
-			String v = null;
-			if (dt.isPrimitive()) {
-				DTSPrimitive pdt = (DTSPrimitive) dt;
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				v = XDT.convertToString(pdt, value, format, xdt);
-			} else if (dt.isDerived()) {
-				DTSDerived ddt = (DTSDerived) dt;
-				DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-				if (xdt == null) {
-					xdt = XDT.fromPDT(pdt);
-				}
-				v = XDT.convertToString(pdt, value, format, xdt);
-			} else if (dt.isExternal()) {
-				// DTExternal dte = (DTExternal) dt;
-				// String uri = dte.getTypeSpec();
-				// if (uri != null) {
-				// v = Mdmi.INSTANCE().getExternalResolvers().getModelValue(dte, value);
-				// } else {
-				// DTSPrimitive pdt = MDMIPackageImpl.STRING;
-				// if (xdt == null) {
-				// xdt = XDT.fromPDT(pdt);
-				// }
-				// v = XDT.convertToString(pdt, value, format, xdt);
-				// }
-			} else {
-				if (value instanceof EnumerationLiteral) {
-					v = ((EnumerationLiteral) value).getCode();
-				} else if (value instanceof String) {
-					v = (String) value;
-				} else {
-					// throw new MdmiException("Invalid enum conversion for type {0} value {1}", edt.getTypeName(), value);
-				}
-			}
-			yleaf.setValue(v);
+			// XDT xdt = XDT.fromString(format);
+			// String v = null;
+			// if (dt.isPrimitive()) {
+			// DTSPrimitive pdt = (DTSPrimitive) dt;
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// v = XDT.convertToString(pdt, value, format, xdt);
+			// } else if (dt.isDerived()) {
+			// DTSDerived ddt = (DTSDerived) dt;
+			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
+			// if (xdt == null) {
+			// xdt = XDT.fromPDT(pdt);
+			// }
+			// v = XDT.convertToString(pdt, value, format, xdt);
+			// } else if (dt.isExternal()) {
+			// // DTExternal dte = (DTExternal) dt;
+			// // String uri = dte.getTypeSpec();
+			// // if (uri != null) {
+			// // v = Mdmi.INSTANCE().getExternalResolvers().getModelValue(dte, value);
+			// // } else {
+			// // DTSPrimitive pdt = MDMIPackageImpl.STRING;
+			// // if (xdt == null) {
+			// // xdt = XDT.fromPDT(pdt);
+			// // }
+			// // v = XDT.convertToString(pdt, value, format, xdt);
+			// // }
+			// } else {
+			// if (value instanceof EnumerationLiteral) {
+			// v = ((EnumerationLiteral) value).getCode();
+			// } else if (value instanceof String) {
+			// v = (String) value;
+			// } else {
+			// // throw new MdmiException("Invalid enum conversion for type {0} value {1}", edt.getTypeName(), value);
+			// }
+			// }
+			// yleaf.setValue(v);
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
