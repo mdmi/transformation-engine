@@ -46,9 +46,9 @@ import org.mdmi.core.MdmiUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SimplifiedSemanticParser implements ISemanticParser {
+public class SemanticParser implements ISemanticParser {
 
-	private static Logger logger = LoggerFactory.getLogger(SimplifiedSemanticParser.class);
+	private static Logger logger = LoggerFactory.getLogger(SemanticParser.class);
 
 	private static Map<String, SemanticInterpreter> semanticRollupInterpreters = new HashMap<>();
 
@@ -70,7 +70,7 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	/**
 	 * @param messageGroup
 	 */
-	public SimplifiedSemanticParser(MessageGroup messageGroup) {
+	public SemanticParser(MessageGroup messageGroup) {
 		this.sourceMessageGroup = messageGroup;
 	}
 
@@ -81,10 +81,12 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		StopWatch watch = new StopWatch();
 		watch.start();
 
+		// --- Validate inputs ---
 		if (mdl == null || yroot == null || eset == null) {
 			throw new IllegalArgumentException("Null argument!");
 		}
-		valueSet = eset;
+		this.valueSet = eset;
+
 		Node root = mdl.getSyntaxModel().getRoot();
 		if (root != yroot.getNode()) {
 			throw new MdmiException(
@@ -93,107 +95,74 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 						: yroot.getNode().getName()));
 		}
 
-		List<XElementValue> initalElements = new ArrayList<>();
+		// --- Initialize elements ---
+		List<XElementValue> initialElements = new ArrayList<>();
 		if (values != null) {
-			initalElements.addAll(setInitialValues(mdl, values));
+			initialElements.addAll(setInitialValues(mdl, values));
 		}
 
-		// 1. create all XElementValues
+		// --- Step 1: Create all XElementValues ---
 		getElements((YNode) yroot);
-		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel getElements" + watch.toSplitString());
+		logSplit(watch, "getElements");
 
-		// 2. set relationships
-		List<IElementValue> xes = valueSet.getAllElementValues();
-		for (IElementValue xe : xes) {
+		// --- Step 2: Set relationships ---
+		for (IElementValue xe : valueSet.getAllElementValues()) {
 			setRelations((XElementValue) xe);
 		}
+		logSplit(watch, "set relationships");
 
-		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set relationships" +
-					watch.toSplitString());
-
-		ArrayList<SemanticElement> computedElementsContainers = new ArrayList<>();
-		// ArrayList<SemanticElement> rootComputedElements = new ArrayList<>();
-
-		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs a" +
-					watch.toSplitString());
-
+		// --- Step 3: Process container/computed semantic elements ---
 		List<IElementValue> foundElements = new ArrayList<>();
-		// = elementValueSet.getElementValuesByName(computedElementOwner);
-
 		for (IElementValue ses : eset.getAllElementValues()) {
-			if ("container".equalsIgnoreCase(ses.getSemanticElement().getDatatype().getName())) {
-				if (ses.getParent() != null) {
-					computedElementsContainers.add(ses.getSemanticElement());
-					foundElements.add(ses);
-				}
+			if (isContainerWithParent(ses)) {
+				foundElements.add(ses);
 			}
-
 		}
-
-		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs b" +
-					watch.toSplitString());
-
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs b foundElements.size() " +
-					foundElements.size());
+		logSplit(watch, "collect container elements (found=" + foundElements.size() + ")");
 
 		for (IElementValue elementValue : foundElements) {
+			processComputedChildren(elementValue, eset, properties);
+		}
+		logSplit(watch, "process computed semantic elements");
 
-			if (elementValue.getSemanticElement() != null) {
-
-				for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
-
-					if (child.isComputed() && !child.isNullFlavor()) {
-						setComputedValue(elementValue, child, eset, properties);
-					} else if (child.isComputedOut()) {
-						if (child.getParent() != null) {
-							setComputedOutValue(child, properties, elementValue);
-						} else {
-							setComputedOutValue(child, properties, null);
-						}
-					}
-
+		// --- Step 4: Attach initial elements to top-level parents ---
+		for (IElementValue elementValue : valueSet.getAllElementValues()) {
+			if (elementValue.getParent() == null && !initialElements.contains(elementValue)) {
+				for (IElementValue initial : initialElements) {
+					initial.setParent(elementValue);
+					elementValue.addChild(initial);
 				}
 			}
-
 		}
+		logSplit(watch, "set parents");
+	}
 
+	/* --- Helpers --- */
+
+	private void logSplit(StopWatch watch, String phase) {
 		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs c" +
-					watch.toSplitString());
+		logger.trace("buildSemanticModel - {} {}", phase, watch.toSplitString());
+	}
 
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set computed SEs" +
-					watch.toSplitString());
+	private boolean isContainerWithParent(IElementValue ses) {
+		return "container".equalsIgnoreCase(ses.getSemanticElement().getDatatype().getName()) &&
+				ses.getParent() != null;
+	}
 
-		for (IElementValue elementValue : this.valueSet.getAllElementValues()) {
+	private void processComputedChildren(IElementValue elementValue, ElementValueSet eset, Properties properties) {
+		if (elementValue.getSemanticElement() == null)
+			return;
 
-			if (elementValue.getParent() == null && !initalElements.contains(elementValue)) {
-
-				for (IElementValue intialElement : initalElements) {
-					intialElement.setParent(elementValue);
-					elementValue.addChild(intialElement);
-
-				}
-
+		for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
+			if (child.isComputed() && !child.isNullFlavor()) {
+				setComputedValue(elementValue, child, eset, properties);
+			} else if (child.isComputedOut()) {
+				setComputedOutValue(
+					child, properties, child.getParent() != null
+							? elementValue
+							: null);
 			}
-
 		}
-
-		watch.split();
-		logger.info(
-			"Execute preProcess processInboundTargetMessage buildSemanticModel set set parents" +
-					watch.toSplitString());
-
 	}
 
 	/**
@@ -236,80 +205,58 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	 * @return The ynode at the requested index (may be creating it if need be).
 	 */
 	private YNode ensureYNodeExists(YNode parent, Node node, int index) {
-		YNode ynode = null;
 		if (parent instanceof YBag) {
-			YBag ybag = (YBag) parent;
-			if (node instanceof Bag) {
-				Bag bag = (Bag) node;
-				List<YNode> ynodes = ybag.getYNodesForNode(bag);
-				while (ynodes.size() <= index) {
-					ynode = new YBag(bag, ybag);
-					ybag.addYNode(ynode);
-					ynodes = ybag.getYNodesForNode(bag);
-				}
-				return ynodes.get(index);
-			} else if (node instanceof Choice) {
-				Choice choice = (Choice) node;
-				List<YNode> ynodes = ybag.getYNodesForNode(choice);
-				while (ynodes.size() <= index) {
-					ynode = new YChoice(choice, ybag);
-					ybag.addYNode(ynode);
-					ynodes = ybag.getYNodesForNode(choice);
-				}
-				return ynodes.get(index);
-			} else {
-				LeafSyntaxTranslator leaf = (LeafSyntaxTranslator) node;
-				List<YNode> ynodes = ybag.getYNodesForNode(leaf);
-				while (ynodes.size() <= index) {
-					ynode = new YLeaf(leaf, ybag);
-					ybag.addYNode(ynode);
-					ynodes = ybag.getYNodesForNode(leaf);
-				}
-				return ynodes.get(index);
-			}
-
+			return ensureForContainer((YBag) parent, node, index);
 		} else if (parent instanceof YChoice) {
-			YChoice ychoice = (YChoice) parent;
-			if (node instanceof Bag) {
-				Bag bag = (Bag) node;
-				if (ychoice.getChosenNode() != bag) {
-					ychoice.forceChoice(null);
-				}
-				ArrayList<YNode> ynodes = ychoice.getYNodes();
-				while (ynodes.size() <= index) {
-					ynode = new YBag(bag, ychoice);
-					ychoice.addYNode(ynode);
-					ynodes = ychoice.getYNodes();
-				}
-				return ynodes.get(index);
-			} else if (node instanceof Choice) {
-				Choice choice = (Choice) node;
-				if (ychoice.getChosenNode() != choice) {
-					ychoice.forceChoice(null);
-				}
-				ArrayList<YNode> ynodes = ychoice.getYNodes();
-				while (ynodes.size() <= index) {
-					ynode = new YChoice(choice, ychoice);
-					ychoice.addYNode(ynode);
-					ynodes = ychoice.getYNodes();
-				}
-				return ynodes.get(index);
-			} else {
-				LeafSyntaxTranslator leaf = (LeafSyntaxTranslator) node;
-				if (ychoice.getChosenNode() != leaf) {
-					ychoice.forceChoice(null);
-				}
-				ArrayList<YNode> ynodes = ychoice.getYNodes();
-				while (ynodes.size() <= index) {
-					ynode = new YLeaf(leaf, ychoice);
-					ychoice.addYNode(ynode);
-					ynodes = ychoice.getYNodes();
-				}
-				return ynodes.get(index);
-			}
-
+			return ensureForChoice((YChoice) parent, node, index);
 		} else {
 			throw new IllegalArgumentException("Invalid state: parent is a leaf!");
+		}
+	}
+
+	private YNode ensureForContainer(YBag ybag, Node node, int index) {
+		List<YNode> ynodes = getYNodes(ybag, node);
+
+		while (ynodes.size() <= index) {
+			YNode ynode = createYNode(node, ybag);
+			ybag.addYNode(ynode);
+			ynodes = getYNodes(ybag, node);
+		}
+		return ynodes.get(index);
+	}
+
+	private YNode ensureForChoice(YChoice ychoice, Node node, int index) {
+		if (ychoice.getChosenNode() != node) {
+			ychoice.forceChoice(null);
+		}
+
+		List<YNode> ynodes = ychoice.getYNodes();
+		while (ynodes.size() <= index) {
+			YNode ynode = createYNode(node, ychoice);
+			ychoice.addYNode(ynode);
+			ynodes = ychoice.getYNodes();
+		}
+		return ynodes.get(index);
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<YNode> getYNodes(YBag ybag, Node node) {
+		if (node instanceof Bag) {
+			return ybag.getYNodesForNode(node);
+		} else if (node instanceof Choice) {
+			return ybag.getYNodesForNode(node);
+		} else {
+			return ybag.getYNodesForNode(node);
+		}
+	}
+
+	private YNode createYNode(Node node, YNode parent) {
+		if (node instanceof Bag) {
+			return new YBag((Bag) node, parent);
+		} else if (node instanceof Choice) {
+			return new YChoice((Choice) node, parent);
+		} else {
+			return new YLeaf((LeafSyntaxTranslator) node, parent);
 		}
 	}
 
@@ -541,48 +488,7 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-
 			xe.getXValue().addValue(value);
-
-			// XDT xdt = XDT.fromString(format);
-			//
-			// if (dt.isPrimitive()) {
-			// DTSPrimitive pdt = (DTSPrimitive) dt;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// } else if (dt.isDerived()) {
-			// DTSDerived ddt = (DTSDerived) dt;
-			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// } else if (dt.isExternal()) {
-			// DTSPrimitive pdt = MDMIPackageImpl.STRING;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// // }
-			// } else if ("InstanceIdentifier".equals(dt.getName())) {
-			// XDataStruct xs = new XDataStruct(xe.getXValue(), true);
-			// xs.setValueSafely("extension", value);
-			// xe.getXValue().addValue(xs);
-			// } else if ("Telecom".equals(dt.getName())) {
-			// XDataStruct xs = new XDataStruct(xe.getXValue(), true);
-			// xs.setValueSafely("value", value);
-			// xe.getXValue().addValue(xs);
-			//
-			// } else {
-			// DTSEnumerated edt = (DTSEnumerated) dt;
-			// EnumerationLiteral el = edt.getLiteralByCode(value);
-			// xe.getXValue().addValue(el);
-			// }
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -609,42 +515,8 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-			// XDT xdt = XDT.fromString(format);
+
 			xe.getXValue().addValue(value);
-			// if (dt.isPrimitive()) {
-			// DTSPrimitive pdt = (DTSPrimitive) dt;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// } else if (dt.isDerived()) {
-			// DTSDerived ddt = (DTSDerived) dt;
-			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// } else if (dt.isExternal()) {
-			// DTExternal dte = (DTExternal) dt;
-			// String uri = dte.getTypeSpec();
-			// if (uri != null) {
-			// // Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
-			// // xe.getXValue().addValue(o);
-			// } else {
-			// DTSPrimitive pdt = MDMIPackageImpl.STRING;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xe.getXValue().addValue(o);
-			// }
-			// } else {
-			// DTSEnumerated edt = (DTSEnumerated) dt;
-			// EnumerationLiteral el = edt.getLiteralByCode(value);
-			// xe.getXValue().addValue(el);
-			// }
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -864,45 +736,9 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String value = yleaf.getValue();
 			String format = yleaf.getLeaf().getFormat();
-			// XDT xdt = XDT.fromString(format);
-			// if (xdt != null) {
-			// format = null; // null the format so it does not get into the
-			// // conversions
-			// }
-			// if (dt.isPrimitive()) {
-			// DTSPrimitive pdt = (DTSPrimitive) dt;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
+
 			xv.addValue(value);
-			// } else if (dt.isDerived()) {
-			// DTSDerived ddt = (DTSDerived) dt;
-			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// xv.addValue(o);
-			// } else if (dt.isExternal()) {
-			// // DTExternal dte = (DTExternal) dt;
-			// // String uri = dte.getTypeSpec();
-			// // // if (uri != null) {
-			// // // Object o = Mdmi.INSTANCE().getExternalResolvers().getDictionaryValue(dte, value);
-			// // // xv.addValue(o);
-			// // // } else {
-			// // DTSPrimitive pdt = MDMIPackageImpl.STRING;
-			// // if (xdt == null) {
-			// // xdt = XDT.fromPDT(pdt);
-			// // }
-			// // Object o = XDT.convertFromString(xdt, value, format, pdt);
-			// // xv.addValue(o);
-			// // // }
-			// } else {
-			// DTSEnumerated edt = (DTSEnumerated) dt;
-			// EnumerationLiteral el = edt.getLiteralByCode(value);
-			// xv.addValue(el);
-			// }
+
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
@@ -911,7 +747,6 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 	private void getValueStruct(YBag ybag, XValue xv, XElementValue owner) {
 		MDMIDatatype dt = xv.getDatatype();
 		if (!dt.isStruct()) {
-			// throw new MdmiException("Invalid mapping for node " + DefaultSyntacticParser.getNodePath(ybag.getNode()));
 			return;
 		}
 		XDataStruct xs = new XDataStruct(xv);
@@ -1212,17 +1047,10 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 				}
 			} else {
 				if (se.getParent() != null) {
-
-					// if (elementValueSet.hasElementValuesByName(se.getParent())) {
-
-					// List<IElementValue> elements = elementValueSet.getElementValuesByType(se.getParent());
-					// for (IElementValue element : elements) {
 					XElementValue computedInElement = new XElementValue(se, elementValueSet);
 					computedInElement.setParent(parentElement);
 					parentElement.addChild(computedInElement);
 					getSemanticInterpreter().update(se.getName() + "_COMPUTED", computedInElement);
-					// }
-					// }
 				}
 
 			}
@@ -1300,44 +1128,6 @@ public class SimplifiedSemanticParser implements ISemanticParser {
 		try {
 			String format = yleaf.getLeaf().getFormat();
 			yleaf.setValue((String) value);
-
-			// XDT xdt = XDT.fromString(format);
-			// String v = null;
-			// if (dt.isPrimitive()) {
-			// DTSPrimitive pdt = (DTSPrimitive) dt;
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// v = XDT.convertToString(pdt, value, format, xdt);
-			// } else if (dt.isDerived()) {
-			// DTSDerived ddt = (DTSDerived) dt;
-			// DTSPrimitive pdt = ddt.getPrimitiveBaseType();
-			// if (xdt == null) {
-			// xdt = XDT.fromPDT(pdt);
-			// }
-			// v = XDT.convertToString(pdt, value, format, xdt);
-			// } else if (dt.isExternal()) {
-			// // DTExternal dte = (DTExternal) dt;
-			// // String uri = dte.getTypeSpec();
-			// // if (uri != null) {
-			// // v = Mdmi.INSTANCE().getExternalResolvers().getModelValue(dte, value);
-			// // } else {
-			// // DTSPrimitive pdt = MDMIPackageImpl.STRING;
-			// // if (xdt == null) {
-			// // xdt = XDT.fromPDT(pdt);
-			// // }
-			// // v = XDT.convertToString(pdt, value, format, xdt);
-			// // }
-			// } else {
-			// if (value instanceof EnumerationLiteral) {
-			// v = ((EnumerationLiteral) value).getCode();
-			// } else if (value instanceof String) {
-			// v = (String) value;
-			// } else {
-			// // throw new MdmiException("Invalid enum conversion for type {0} value {1}", edt.getTypeName(), value);
-			// }
-			// }
-			// yleaf.setValue(v);
 		} catch (Throwable throwable) {
 			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}

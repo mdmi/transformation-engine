@@ -8,7 +8,7 @@
  */
 
 // Generated from XPath.g4 by ANTLR 4.2
-package org.mdmi.core.engine.xml;
+package org.mdmi.core.engine.parser.xml;
 
 import java.util.List;
 

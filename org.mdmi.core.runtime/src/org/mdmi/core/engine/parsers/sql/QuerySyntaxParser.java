@@ -6,7 +6,7 @@
  * You may obtain a copy of the License at
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.mdmi.core.engine.parsers;
+package org.mdmi.core.engine.parsers.sql;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

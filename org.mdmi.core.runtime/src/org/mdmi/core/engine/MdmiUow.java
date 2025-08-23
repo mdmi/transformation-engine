@@ -303,19 +303,19 @@ public class MdmiUow implements Runnable {
 		transferInfo.targetMessage.getData();
 
 		watch.split();
-		logger.info("Execute preProcess processInboundTargetMessage get data" + Thread.currentThread().getName());
+		logger.trace("Execute preProcess processInboundTargetMessage get data" + Thread.currentThread().getName());
 
 		ISemanticParser trgSemProv = getSemanticProvider(transferInfo.getTargetMessageGroup());
 		ISyntacticParser trgSynProv = getSyntaxProvider(transferInfo.getTargetMessageGroup());
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Execute preProcess processInboundTargetMessage getSemanticProvider" + Thread.currentThread().getName());
 
 		transferInfo.targetModel.getModel().getSyntaxModel().getRoot();
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Execute preProcess processInboundTargetMessage transferInfo.targetModel.getModel().getSyntaxModel().getRoot()" +
 					Thread.currentThread().getName());
 
@@ -330,7 +330,7 @@ public class MdmiUow implements Runnable {
 			transferInfo.targetValues);
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Execute preProcess processInboundTargetMessage buildSemanticModel" + Thread.currentThread().getName());
 
 	}

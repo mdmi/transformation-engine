@@ -9,7 +9,7 @@
 /*
  * $Id: TreeWalker.java 468654 2006-10-28 07:09:23Z minchau $
  */
-package org.mdmi.core.engine.xml;
+package org.mdmi.core.engine.parser.xml;
 
 import java.io.File;
 
@@ -242,16 +242,7 @@ public class InternalTreeWalker {
 	 */
 	protected void startNode(Node node) throws org.xml.sax.SAXException {
 
-		// TODO: <REVIEW>
-		// A Serializer implements ContentHandler, but not NodeConsumer
-		// so drop this reference to NodeConsumer which would otherwise
-		// pull in all sorts of things
-		// if (m_contentHandler instanceof NodeConsumer)
-		// {
-		// ((NodeConsumer) m_contentHandler).setOriginatingNode(node);
-		// }
-		// TODO: </REVIEW>
-
+		// Update locator info if node provides it
 		if (node instanceof Locator) {
 			Locator loc = (Locator) node;
 			m_locator.setColumnNumber(loc.getColumnNumber());
@@ -263,133 +254,112 @@ public class InternalTreeWalker {
 			m_locator.setLineNumber(0);
 		}
 
+		LexicalHandler lexicalHandler = (m_contentHandler instanceof LexicalHandler)
+				? (LexicalHandler) m_contentHandler
+				: null;
+
 		switch (node.getNodeType()) {
 			case Node.COMMENT_NODE: {
-				String data = ((Comment) node).getData();
-
-				if (m_contentHandler instanceof LexicalHandler) {
-					LexicalHandler lh = ((LexicalHandler) this.m_contentHandler);
-
-					lh.comment(data.toCharArray(), 0, data.length());
+				if (lexicalHandler != null) {
+					String data = ((Comment) node).getData();
+					lexicalHandler.comment(data.toCharArray(), 0, data.length());
 				}
-			}
 				break;
+			}
+
 			case Node.DOCUMENT_FRAGMENT_NODE:
-
-				// ??;
-				break;
 			case Node.DOCUMENT_NODE:
-
+				// No special handling required
 				break;
-			case Node.ELEMENT_NODE:
-				Element elem_node = (Element) node; {
-				// Make sure the namespace node
-				// for the element itself is declared
-				// to the ContentHandler
-				String uri = elem_node.getNamespaceURI();
+
+			case Node.ELEMENT_NODE: {
+				Element element = (Element) node;
+
+				// Declare element namespace to ContentHandler
+				String uri = element.getNamespaceURI();
+				String prefix = element.getPrefix() != null
+						? element.getPrefix()
+						: "";
 				if (uri != null) {
-					String prefix = elem_node.getPrefix();
-					if (prefix == null) {
-						prefix = "";
-					}
-					this.m_contentHandler.startPrefixMapping(prefix, uri);
+					m_contentHandler.startPrefixMapping(prefix, uri);
 				}
-			}
-				NamedNodeMap atts = elem_node.getAttributes();
-				int nAttrs = atts.getLength();
 
-				// Make sure the namespace node of
-				// each attribute is declared to the ContentHandler
-				for (int i = 0; i < nAttrs; i++) {
-					final Node attr = atts.item(i);
-					final String attrName = attr.getNodeName();
-					final int colon = attrName.indexOf(':');
-					final String prefix;
+				// Declare namespaces for attributes
+				NamedNodeMap attributes = element.getAttributes();
+				for (int i = 0; i < attributes.getLength(); i++) {
+					Node attr = attributes.item(i);
+					String attrName = attr.getNodeName();
+					int colon = attrName.indexOf(':');
 
-					if (attrName.equals("xmlns") || attrName.startsWith("xmlns:")) {
-						// Use "" instead of null, as Xerces likes "" for the
-						// name of the default namespace. Fix attributed
-						// to "Steven Murray" <smurray@ebt.com>.
-						if (colon < 0) {
-							prefix = "";
-						} else {
-							prefix = attrName.substring(colon + 1);
-						}
-
-						this.m_contentHandler.startPrefixMapping(prefix, attr.getNodeValue());
+					if ("xmlns".equals(attrName) || attrName.startsWith("xmlns:")) {
+						prefix = colon < 0
+								? ""
+								: attrName.substring(colon + 1);
+						m_contentHandler.startPrefixMapping(prefix, attr.getNodeValue());
 					} else if (colon > 0) {
 						prefix = attrName.substring(0, colon);
-						String uri = attr.getNamespaceURI();
+						uri = attr.getNamespaceURI();
 						if (uri != null) {
-							this.m_contentHandler.startPrefixMapping(prefix, uri);
+							m_contentHandler.startPrefixMapping(prefix, uri);
 						}
 					}
 				}
 
 				String ns = m_dh.getNamespaceOfNode(node);
-				if (null == ns) {
-					ns = "";
-				}
-				this.m_contentHandler.startElement(
-					ns, m_dh.getLocalNameOfNode(node), node.getNodeName(), new AttList(atts, m_dh));
+				ns = ns != null
+						? ns
+						: "";
+				m_contentHandler.startElement(
+					ns, m_dh.getLocalNameOfNode(node), node.getNodeName(), new AttList(attributes, m_dh));
 				break;
+			}
+
 			case Node.PROCESSING_INSTRUCTION_NODE: {
 				ProcessingInstruction pi = (ProcessingInstruction) node;
-				String name = pi.getNodeName();
-
-				// String data = pi.getData();
-				if (name.equals("xslt-next-is-raw")) {
+				if ("xslt-next-is-raw".equals(pi.getNodeName())) {
 					nextIsRaw = true;
 				} else {
-					this.m_contentHandler.processingInstruction(pi.getNodeName(), pi.getData());
+					m_contentHandler.processingInstruction(pi.getNodeName(), pi.getData());
 				}
-			}
 				break;
-			case Node.CDATA_SECTION_NODE: {
-				boolean isLexH = (m_contentHandler instanceof LexicalHandler);
-				LexicalHandler lh = isLexH
-						? ((LexicalHandler) this.m_contentHandler)
-						: null;
+			}
 
-				if (isLexH) {
-					lh.startCDATA();
+			case Node.CDATA_SECTION_NODE: {
+				if (lexicalHandler != null) {
+					lexicalHandler.startCDATA();
 				}
 
 				dispatachChars(node);
 
-				{
-					if (isLexH) {
-						lh.endCDATA();
-					}
+				if (lexicalHandler != null) {
+					lexicalHandler.endCDATA();
 				}
-			}
 				break;
-			case Node.TEXT_NODE: {
-				// String data = ((Text) node).getData();
+			}
 
+			case Node.TEXT_NODE: {
 				if (nextIsRaw) {
 					nextIsRaw = false;
-
 					m_contentHandler.processingInstruction(javax.xml.transform.Result.PI_DISABLE_OUTPUT_ESCAPING, "");
 					dispatachChars(node);
 					m_contentHandler.processingInstruction(javax.xml.transform.Result.PI_ENABLE_OUTPUT_ESCAPING, "");
 				} else {
 					dispatachChars(node);
 				}
-			}
 				break;
+			}
+
 			case Node.ENTITY_REFERENCE_NODE: {
-				EntityReference eref = (EntityReference) node;
-
-				if (m_contentHandler instanceof LexicalHandler) {
-					((LexicalHandler) this.m_contentHandler).startEntity(eref.getNodeName());
-				} else {
-
-					// warning("Can not output entity to a pure SAX ContentHandler");
+				EntityReference entityRef = (EntityReference) node;
+				if (lexicalHandler != null) {
+					lexicalHandler.startEntity(entityRef.getNodeName());
 				}
-			}
+				// Otherwise, pure SAX ContentHandler cannot output entities
 				break;
+			}
+
 			default:
+				// No action for other node types
 		}
 	}
 

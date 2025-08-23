@@ -23,8 +23,8 @@ import java.util.List;
 import org.mdmi.MessageGroup;
 import org.mdmi.MessageModel;
 import org.mdmi.core.Mdmi.MapInfo;
-import org.mdmi.core.engine.SimplifiedSemanticParser;
-import org.mdmi.core.engine.parsers.MLSyntacticParser;
+import org.mdmi.core.engine.SemanticParser;
+import org.mdmi.core.engine.parsers.ml.MLSyntacticParser;
 import org.mdmi.core.engine.postprocessors.IPostProcessor;
 import org.mdmi.core.engine.preprocessors.IPreProcessor;
 import org.mdmi.util.MDMIUtil;
@@ -383,7 +383,7 @@ public class MdmiResolver {
 					try {
 						switch (messageGroup.getDefaultLocationExprLang()) {
 							case "JSON":
-								return new org.mdmi.core.engine.json.JsonSyntacticParser();
+								return new org.mdmi.core.engine.parsers.json.JsonSyntacticParser();
 							case "HL7":
 								return (ISyntacticParser) Class.forName(
 									"org.openhealthtools.mdht.mdmiplugins.parsers.HL7Parser").getDeclaredConstructor().newInstance();
@@ -396,7 +396,7 @@ public class MdmiResolver {
 							// "org.mdmi.engine.parsers.MLSyntacticParser").newInstance();
 							default:
 								// TreeWalker tw;
-								return new org.mdmi.core.engine.xml.DOMSAXSyntacticParser(messageGroup.getName());
+								return new org.mdmi.core.engine.parser.xml.DOMSAXSyntacticParser(messageGroup.getName());
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -407,13 +407,13 @@ public class MdmiResolver {
 
 			}
 
-			return new org.mdmi.core.engine.xml.DOMSAXSyntacticParser(messageGroup.getName());
+			return new org.mdmi.core.engine.parser.xml.DOMSAXSyntacticParser(messageGroup.getName());
 
 		}
 
 		ISemanticParser getSemanticParser() {
 
-			return new SimplifiedSemanticParser(messageGroup);
+			return new SemanticParser(messageGroup);
 
 		}
 	} // MdmiMapResolver$MT

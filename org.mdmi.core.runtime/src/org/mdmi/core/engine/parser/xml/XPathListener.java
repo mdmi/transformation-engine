@@ -8,7 +8,7 @@
  */
 
 // Generated from XPath.g4 by ANTLR 4.2
-package org.mdmi.core.engine.xml;
+package org.mdmi.core.engine.parser.xml;
 
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTreeListener;

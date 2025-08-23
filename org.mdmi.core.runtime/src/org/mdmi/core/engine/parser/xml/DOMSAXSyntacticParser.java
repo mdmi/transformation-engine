@@ -6,7 +6,7 @@
  * You may obtain a copy of the License at
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.mdmi.core.engine.xml;
+package org.mdmi.core.engine.parser.xml;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -55,10 +55,10 @@ import org.mdmi.core.engine.YBag;
 import org.mdmi.core.engine.YChoice;
 import org.mdmi.core.engine.YLeaf;
 import org.mdmi.core.engine.YNode;
-import org.mdmi.core.engine.xml.XPathParser.AbbreviatedStepContext;
-import org.mdmi.core.engine.xml.XPathParser.AxisSpecifierContext;
-import org.mdmi.core.engine.xml.XPathParser.NodeTestContext;
-import org.mdmi.core.engine.xml.XPathParser.PredicateContext;
+import org.mdmi.core.engine.parser.xml.XPathParser.AbbreviatedStepContext;
+import org.mdmi.core.engine.parser.xml.XPathParser.AxisSpecifierContext;
+import org.mdmi.core.engine.parser.xml.XPathParser.NodeTestContext;
+import org.mdmi.core.engine.parser.xml.XPathParser.PredicateContext;
 import org.mdmi.core.util.XmlParser;
 import org.mdmi.core.util.XmlUtil;
 import org.mdmi.core.util.XslUtil;
@@ -1141,12 +1141,12 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			}
 			String nodeName = location(node); // for the root node it is its name
 			msg.getData();
-			XmlParser p = new XmlParser();
+			XmlParser pppp = new XmlParser();
 			Document doc = null;
 			Element root = null;
 
 			// if (data == null) {
-			doc = p.newDocument();
+			doc = pppp.newDocument();
 
 			logger.trace("create node " + nodeName);
 			root = doc.createElement(nodeName);

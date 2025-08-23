@@ -1,9 +1,9 @@
 /*
  * MDIX - Model Driven Message Interoperability Runtime.
- * ...
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy at:
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
 
@@ -24,73 +24,54 @@ import org.slf4j.LoggerFactory;
 
 public class RuntimeService {
 
-	private static Logger logger = LoggerFactory.getLogger(RuntimeService.class);
+	private static final Logger logger = LoggerFactory.getLogger(RuntimeService.class);
 
-	//
 	public static String runTransformation(String srcMdl, byte[] srcData, String trgMdl,
 			Properties sourcePropertyValues, Properties targetPropertyValues, JSONObject sourceValues,
 			JSONObject targetValues) throws Exception {
 
-		String retVal = null;
+		String[] srcParts = srcMdl.split("\\.");
+		String srcMapName = srcParts[0];
+		String srcMsgMdl = srcParts[1];
 
-		String[] a = srcMdl.split("\\.");
-		String srcMapName = a[0];
-		String srcMsgMdl = a[1];
-		a = trgMdl.split("\\.");
-		String trgMapName = a[0];
-		String trgMsgMdl = a[1];
+		String[] trgParts = trgMdl.split("\\.");
+		String trgMapName = trgParts[0];
+		String trgMsgMdl = trgParts[1];
+
 		final ArrayList<String> filter = new ArrayList<>();
 
-		logger.trace("Start Mdmi.INSTANCE().getResolver().load(Mdmi.INSTANCE()) " + Thread.currentThread().getName());
-
+		logger.trace("Loading resolver (thread: {})", Thread.currentThread().getName());
 		Mdmi.INSTANCE().getResolver().load(Mdmi.INSTANCE());
 
-		logger.trace("End Mdmi.INSTANCE().getResolver().load(Mdmi.INSTANCE()) " + Thread.currentThread().getName());
 		MdmiModelRef sMod = new MdmiModelRef(srcMapName, srcMsgMdl);
 		MdmiMessage sMsg = new MdmiMessage(srcData);
 		MdmiModelRef tMod = new MdmiModelRef(trgMapName, trgMsgMdl);
 		MdmiMessage tMsg = new MdmiMessage();
 
-		logger.trace(
-			"Start  MdmiUtil.getElements(sMod.getModel(), tMod.getModel(), filter) " +
-					Thread.currentThread().getName());
+		logger.trace("Fetching business element references (thread: {})", Thread.currentThread().getName());
 		ArrayList<MDMIBusinessElementReference> bers = MdmiUtil.getElements(sMod.getModel(), tMod.getModel(), filter);
-		logger.trace(
-			"End  MdmiUtil.getElements(sMod.getModel(), tMod.getModel(), filter) " + Thread.currentThread().getName());
 
 		MdmiTransferInfo ti = new MdmiTransferInfo(sMod, sMsg, tMod, tMsg, bers);
-
 		ti.sourceProperties = sourcePropertyValues;
 		ti.targetProperties = targetPropertyValues;
 		ti.sourceValues = sourceValues;
 		ti.targetValues = targetValues;
 
 		long start = System.nanoTime();
+		logger.trace("Executing transfer (thread: {})", Thread.currentThread().getName());
 
-		logger.trace("Start Mdmi.INSTANCE().executeTransfer(ti) " + Thread.currentThread().getName());
-
-		Mdmi.INSTANCE().executeTransfer(ti); // do something
-
-		logger.trace("End Mdmi.INSTANCE().executeTransfer(ti) " + Thread.currentThread().getName());
+		Mdmi.INSTANCE().executeTransfer(ti);
 
 		long elapsedTime = System.nanoTime() - start;
+		logger.trace("Transformation completed in {} ns", elapsedTime);
 
-		logger.trace("Elapsed time for transformaiton" + elapsedTime);
-		retVal = tMsg.getDataAsString();
+		String result = tMsg.getDataAsString();
 
-		// ti.
+		// Clean references to allow GC
 		ti.targetMessage = null;
 		ti.sourceMessage = null;
-		// ti.
 
-		return retVal; // return the target message transformed
-	}
-
-	public static void loadMapzzz(String srcMap, String srcMdl) throws Exception {
-		Mdmi mdmi = Mdmi.INSTANCE();
-		mdmi.start();
-		Mdmi.INSTANCE().putMapInfo(new Mdmi.MapInfo(srcMdl, srcMap));
-		Mdmi.INSTANCE().getResolver().load(Mdmi.INSTANCE());
+		return result;
 	}
 
 }
