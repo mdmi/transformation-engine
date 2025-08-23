@@ -1,34 +1,11 @@
-/*******************************************************************************
-* This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-*     Jeff Klann - initial API and implementation
-*
-* Changelog:
-*    Jeff Klann - 1.0 - initial implementation
-*    Jeff Klann - 1.1 - now handles quoted literals more fully and retains precision of input
-*     when outputting
-*
-* Author:
-*     Jeff Klann, PhD
-*
-* This contributes to a reimaining of Dates in MDMI. Also see DateWrapper,
-* DateTimeConverter, ToStringConverter, and ToDateTimeConverter. Currently allows values that are
-* shorter or longer than the specified format and supports quoted literals in the format string.
-* Uses either HL7 or ISO as default, depending on the input string. Retains output precision correctly.
-* Does not support optional timezones with shorter strings.
-* Also does not validate that the parsed string makes sense -
-* this seems to only affect the year, which can be very strange if a bad value is passed
-* for certain date formats.
-*
-*
-* @author jklann
-* @version 1.1
-*
-*******************************************************************************/
+/*
+ * MDIX - Model Driven Message Interoperability Runtime.
+ * ...
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
 package org.mdmi.core.util;
 
 import java.text.ParseException;

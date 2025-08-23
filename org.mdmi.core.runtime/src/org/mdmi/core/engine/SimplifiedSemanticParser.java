@@ -1,23 +1,11 @@
-/*******************************************************************************
- * Copyright (c) 2016 MDIX Software, Inc.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- * Contributors:
- *     MDIX Software, Inc.. - Refactored from Default Semantic Parser
- *
- * Author:
- *    Sean Muir
- *
- * SimplifiedSemanticParser - as it names suggests - has simplified and streamlined some of the
- * MDMI functions to support the CDA mapping requirements
- *
- *  In particular the use of Semantic Containers and limiting the use of Local Semantic Containers to being
- *  a cardinality of 1
- *
- *******************************************************************************/
+/*
+ * MDIX - Model Driven Message Interoperability Runtime.
+ * ...
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
 package org.mdmi.core.engine;
 
 import java.util.ArrayList;
