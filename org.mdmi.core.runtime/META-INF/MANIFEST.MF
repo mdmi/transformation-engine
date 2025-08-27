@@ -5,14 +5,15 @@ Bundle-Name: MDMI Runtime Plug-In
 Bundle-Vendor: MDIX, www.mdixinc.com
 Bundle-SymbolicName: org.mdmi.core.runtime;singleton:=true
 Bundle-Version: 4.1.1.qualifier
-Bundle-ClassPath: .
+Bundle-ClassPath: .,
+ 3rdparty/antlr/antlr4-4.10.1.jar,
+ 3rdparty/antlr/antlr4-runtime-4.10.1.jar
 Require-Bundle: org.apache.commons.cli,
  org.apache.commons.lang3,
  org.mdmi.ecore,
  com.google.guava,
  org.eclipse.emf.ecore,
  org.eclipse.emf.ecore.xmi,
- org.antlr.runtime;bundle-version="4.7.1";visibility:=reexport,
  com.google.gson,
  org.apache.xml.serializer,
  org.apache.httpcomponents.client5.httpclient5,
@@ -20,13 +21,8 @@ Require-Bundle: org.apache.commons.cli,
  slf4j.api;resolution:=optional
 Export-Package: org.mdmi.core,
  org.mdmi.core.engine,
- org.mdmi.core.engine.converter,
- org.mdmi.core.engine.converter.from,
- org.mdmi.core.engine.converter.to,
  org.mdmi.core.engine.javascript,
- org.mdmi.core.engine.json,
  org.mdmi.core.engine.parser.xml,
- org.mdmi.core.engine.parsers,
  org.mdmi.core.engine.postprocessors,
  org.mdmi.core.engine.preprocessors,
  org.mdmi.core.engine.terminology,

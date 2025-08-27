@@ -1400,7 +1400,7 @@ public class SemanticParser implements ISemanticParser {
 		logger.trace("Root Semantic Element " + rootSemantic.getName());
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel one : " +
 					watch.toSplitString());
 
@@ -1409,7 +1409,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel fillInTheBlanks : " +
 					watch.toSplitString());
 
@@ -1449,7 +1449,7 @@ public class SemanticParser implements ISemanticParser {
 
 		watch.split();
 
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel update all semantic containment : " +
 					watch.toSplitString());
 
@@ -1465,14 +1465,14 @@ public class SemanticParser implements ISemanticParser {
 
 		walkComputedIn(mdl, elementValueSet, properties, containers);
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn : " +
 					watch.toSplitString());
 
 		walkNullFlavor(elementValueSet, properties);
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkNullFlavor : " +
 					watch.toSplitString());
 

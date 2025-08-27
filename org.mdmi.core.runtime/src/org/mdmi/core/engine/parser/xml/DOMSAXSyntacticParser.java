@@ -33,8 +33,9 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
@@ -237,7 +238,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 		}
 
 		logger.trace(elemement.getNodeName() + " creating " + xPath + " container " + container);
-		XPathLexer lexer = new XPathLexer(new ANTLRInputStream(xPath));
+
+		CharStream input = CharStreams.fromString(xPath);
+
+		XPathLexer lexer = new XPathLexer(input);
 
 		logger.trace("Creating CommonTokenStream");
 		CommonTokenStream tokens = new CommonTokenStream(lexer);

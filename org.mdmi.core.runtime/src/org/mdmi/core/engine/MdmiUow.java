@@ -607,14 +607,15 @@ public class MdmiUow implements Runnable {
 
 								String[] referenceParameters = tmo.getRule().split(":");
 								String containmentParameter = referenceParameters[1];
-
-								if (sourceElementValue.getParent() != null) {
-									for (ConversionRule zzz : sourceElementValue.getParent().getSemanticElement().getMapToMdmi()) {
+								IElementValue element = sourceElementValue.getParent();
+								while (element != null && !checkReferenceContainment) {
+									for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
 
 										if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
 											checkReferenceContainment = true;
 										}
 									}
+									element = element.getParent();
 								}
 
 							}

@@ -33,19 +33,19 @@ Do with this code as you will.
   COMMA  :  ',';
   PIPE  :  '|';
   LESS  :  '<';
-  MORE  :  '>';
+  MY_MORE  :  '>';
   LE  :  '<=';
   GE  :  '>=';
   COLON  :  ':';
   CC  :  '::';
-  APOS  :  '\'';
-  QUOT  :  '\"';
+  APOS  : '\'' ;   // single quote
+  QUOT  : '"'  ;   // double quote
 
 
 main  :  expr
   ;
 
-locationPath 
+locationPath
   :  relativeLocationPath
   |  absoluteLocationPathNoroot
   ;
@@ -89,7 +89,7 @@ primaryExpr
   :  variableReference
   |  '(' expr ')'
   |  Literal
-  |  Number  
+  |  Number
   |  functionCall
   ;
 
@@ -163,7 +163,7 @@ NodeType:  'comment'
   |  'processing-instruction'
   |  'node'
   ;
-  
+
 Number  :  Digits ('.' Digits?)?
   |  '.' Digits
   ;
@@ -192,7 +192,7 @@ Literal  :  '"' ~'"'* '"'
   ;
 
 Whitespace
-  :  (' '|'\t'|'\n'|'\r')+ 
+  :  (' '|'\t'|'\n'|'\r')+
   ;
 
 NCName  :  NCNameStartChar NCNameChar*
