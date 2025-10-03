@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -406,6 +407,51 @@ public class MdmiUow implements Runnable {
 
 	boolean manyToOneContainers = true;
 
+	private static class Reference {
+
+		public IElementValue parent;
+
+		public IElementValue source;
+
+		public SemanticElement target;
+
+		/**
+		 * @param parent
+		 * @param source
+		 * @param target
+		 */
+		public Reference(IElementValue parent, IElementValue source, SemanticElement target) {
+			super();
+			this.parent = parent;
+			this.source = source;
+			this.target = target;
+		}
+
+		public IElementValue getParent() {
+			return parent;
+		}
+
+		public void setParent(IElementValue parent) {
+			this.parent = parent;
+		}
+
+		public IElementValue getSource() {
+			return source;
+		}
+
+		public void setSource(IElementValue source) {
+			this.source = source;
+		}
+
+		public SemanticElement getTarget() {
+			return target;
+		}
+
+		public void setTarget(SemanticElement target) {
+			this.target = target;
+		}
+	}
+
 	static public boolean sourceFilter = false;
 
 	HashMap<String, HashSet<String>> manyToOneMatches = new HashMap<>();
@@ -578,7 +624,10 @@ public class MdmiUow implements Runnable {
 							tmo.getBusinessElement().getUniqueIdentifier())) {
 							continue;
 						}
-						logger.trace("CREATE CORRESPONDNG ELEMENT " + targetSementicElement.getName());
+
+						logger.trace(
+							sourceElementValue.getSemanticElement().getName() + " CREATING CORRESPONDNG ELEMENT " +
+									targetSementicElement.getName());
 						Stack<SemanticElement> mappedParentStack = new Stack<>();
 						getMappedStack(targetSementicElement, mappedParentStack);
 
@@ -605,9 +654,21 @@ public class MdmiUow implements Runnable {
 							boolean checkReferenceContainment = false;
 							if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
 
+								System.err.println(targetSementicElement.getName());
 								String[] referenceParameters = tmo.getRule().split(":");
 								String containmentParameter = referenceParameters[1];
 								IElementValue element = sourceElementValue.getParent();
+								// if (containmentParameter.equals("OrganizationContainer")) {
+								// checkReferenceContainment = true;
+								// }
+
+								if ("Patient0988".equals(targetSementicElement.getName())) {
+									checkReferenceContainment = true;
+								}
+
+								if ("Beneficiary333".equals(targetSementicElement.getName())) {
+									checkReferenceContainment = true;
+								}
 								while (element != null && !checkReferenceContainment) {
 									for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
 
@@ -618,8 +679,51 @@ public class MdmiUow implements Runnable {
 									element = element.getParent();
 								}
 
+								if (!checkReferenceContainment) {
+
+									final List<String> found = new ArrayList<String>();
+
+									Consumer<? super IElementValue> go = new Consumer<IElementValue>() {
+
+										@Override
+										public void accept(IElementValue t) {
+
+											if (t.getSemanticElement() != null) {
+												for (ConversionRule zzz : t.getSemanticElement().getMapToMdmi()) {
+
+													if (containmentParameter.equals(
+														zzz.getBusinessElement().getName())) {
+														found.add("found");
+													}
+												}
+											}
+
+											// TODO Auto-generated method stub
+
+										}
+
+									};
+									whattotransfer.forEach(go);
+									if (!found.isEmpty()) {
+										System.err.println("PROCESS REFERENCE " + targetSementicElement.getName());
+										checkReferenceContainment = true;
+									}
+
+									//
+									// for (whattotransfer.) {
+									//
+									// }
+									// // sourceElementValue.
+									// // if (targetSementicElement.getParent() != null) {
+									// // // if (srcSemanticModel.) {
+									// // //
+									// // // }
+									// // }
+
+								}
 							}
-							wholeStackMapped = checkReferenceContainment;
+
+							wholeStackMapped = false; // checkReferenceContainment;
 						}
 
 						if (wholeStackMapped) {
@@ -675,6 +779,156 @@ public class MdmiUow implements Runnable {
 
 			}
 
+		}
+
+		// for (String r : targetSementicReferences) {
+		//
+		// }
+
+		ArrayList<Reference> referencesToCreate = new ArrayList<>();
+		for (IElementValue x : trgSemanticModel.getAllElementValues()) {
+
+			for (SemanticElement c : x.getSemanticElement().getChildren()) {
+
+				for (ConversionRule toMessage : c.getMapFromMdmi()) {
+					if (toMessage.getRule() != null && toMessage.getRule().startsWith("REFERENCE:")) {
+						// System.err.println("MISSING REFERENCES " + c.getName());
+
+						String[] referenceParameters = toMessage.getRule().split(":");
+
+						for (IElementValue again : trgSemanticModel.getAllElementValues()) {
+							for (SemanticElement againc : again.getSemanticElement().getChildren()) {
+
+								for (ConversionRule toMessageAgain : againc.getMapFromMdmi()) {
+
+									if (toMessageAgain.getBusinessElement() != null && referenceParameters[1].equals(
+										toMessageAgain.getBusinessElement().getName())) {
+
+										for (ConversionRule xxx : c.getMapFromMdmi()) {
+											if (xxx.getBusinessElement() != null) {
+
+												for (IElementValue sourceElement : srcSemanticModel.getAllElementValues()) {
+													for (ConversionRule toMdmi2 : sourceElement.getSemanticElement().getMapToMdmi()) {
+														if (toMdmi2.getBusinessElement().getUniqueIdentifier().equals(
+															xxx.getBusinessElement().getUniqueIdentifier())) {
+
+															Reference ref = new Reference(x, sourceElement, c);
+															referencesToCreate.add(ref);
+															// System.err.println(
+															// "Create REFERENCE target Semantic Element" +
+															// c.getName());
+															// System.err.println(
+															// "SEER " + xxx.getBusinessElement().getName());
+															//
+															// System.err.println("SETTOPARENT " + x.getName());
+
+														}
+													}
+
+												}
+											}
+
+										}
+
+										// System.err.println(
+										// "MISSING REFERENCES FOUND REFERENCE " + referenceParameters[1] + " : " +
+										// againc.getName());
+
+										/*
+										 * logger.trace("CREATING TARGET ELEMENT " + targetSementicElement.getName());
+										 * XElementValue targetElementValue = new XElementValue(
+										 * targetSementicElement, trgSemanticModel);
+										 *
+										 * try {
+										 *
+										 * @SuppressWarnings("deprecation")
+										 * org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
+										 * targetSementicElement, tme.getBusinessElement(), tmo.getBusinessElement());
+										 * impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
+										 *
+										 * targettosource.put(targetElementValue, sourceElementValue);
+										 *
+										 * if (!sourcetotarget.containsKey(sourceElementValue)) {
+										 * sourcetotarget.put(sourceElementValue, new ArrayList<IElementValue>());
+										 * }
+										 * sourcetotarget.get(sourceElementValue).add(targetElementValue);
+										 *
+										 * } catch (Exception e) {
+										 * logger.error("ERROR IN CONVERSION", e);
+										 * }
+										 *
+										 */
+
+									}
+
+								}
+
+							}
+						}
+						// trgSemanticModel
+					}
+
+				}
+			}
+
+			// while (element != null && !checkReferenceContainment) {
+			// for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
+			//
+			// if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
+			// checkReferenceContainment = true;
+			// }
+			// }
+			// element = element.getParent();
+			// }
+			//
+			// for (x.getSemanticElement()) {
+
+			// }
+		}
+
+		for (Reference r : referencesToCreate) {
+
+			try {
+
+				// @SuppressWarnings("deprecation")
+
+				for (ConversionRule tme : r.getSource().getSemanticElement().getMapToMdmi()) {
+
+					for (ConversionRule tmo : r.getTarget().getMapToMdmi()) {
+
+						if (!tme.getBusinessElement().getUniqueIdentifier().equals(
+							tmo.getBusinessElement().getUniqueIdentifier())) {
+							continue;
+						}
+
+						logger.trace("Create Reference Source Element" + r.getSource().getName());
+						logger.trace("Create Reference Target Semantic Element " + r.getTarget().getName());
+						logger.trace("Create Reference Parent " + r.getParent().getName());
+
+						logger.trace("CREATING Reference TARGET ELEMENT " + r.getTarget().getName());
+						XElementValue targetElementValue = new XElementValue(r.getTarget(), trgSemanticModel);
+
+						targetElementValue.setParent(r.getParent());
+						r.getParent().addChild(targetElementValue);
+
+						org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
+							r.getTarget(), tme.getBusinessElement(), tmo.getBusinessElement());
+						impl.convert((XElementValue) r.getSource(), ci, targetElementValue);
+
+						targettosource.put(targetElementValue, r.getSource());
+
+						if (!sourcetotarget.containsKey(r.getSource())) {
+							sourcetotarget.put(r.getSource(), new ArrayList<IElementValue>());
+						}
+						sourcetotarget.get(r.getSource()).add(targetElementValue);
+
+					}
+				}
+
+			} catch (Exception e) {
+				logger.error("ERROR IN CONVERSION", e);
+			}
+			// }
 		}
 
 		watch.split();

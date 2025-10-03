@@ -8,6 +8,9 @@
  */
 package org.mdmi.core;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,18 +91,41 @@ public class MdmiUtil {
 
 		if (!srcMessageModel.equals(trgMessageModel)) {
 			if (logger.isTraceEnabled()) {
+
+				StringBuffer onlyinsourcelog = new StringBuffer();
+				StringBuffer commonlog = new StringBuffer();
+
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnLeft().values()) {
 					logger.trace("SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier());
+
+					onlyinsourcelog.append(
+						"SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier()).append(
+							System.lineSeparator());
 
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesInCommon().values()) {
 					logger.trace(
 						"SEER Elements : Common to both messages " + mber.getName() + " " + mber.getUniqueIdentifier());
 
+					commonlog.append(
+						"SEER Elements : Common to both messages " + mber.getName() + " " +
+								mber.getUniqueIdentifier()).append(System.lineSeparator());
+
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnRight().values()) {
 					logger.trace("SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier());
 
+				}
+
+				try {
+					Files.createDirectories(Paths.get("./logs"));
+
+					Files.write(Paths.get("./logs/OnlyInSource.log"), onlyinsourcelog.toString().getBytes());
+					Files.write(Paths.get("./logs/Common.log"), commonlog.toString().getBytes());
+
+				} catch (IOException e) {
+					logger.trace("Unable to log datatypes");
+					// e.printStackTrace();
 				}
 
 			}

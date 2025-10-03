@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="lib" path="3rdparty/antlr/antlr4-4.10.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="3rdparty/antlr/antlr4-runtime-4.10.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="3rdparty/antlr/antlr-4.13.2-complete.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="module" value="true"/>
