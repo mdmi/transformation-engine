@@ -8,6 +8,9 @@
  */
 package org.mdmi.core.engine;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -223,6 +226,18 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.info("parse : " + watch.toSplitString());
 
+		if (logger.isTraceEnabled()) {
+			try {
+				Files.createDirectories(Paths.get("./logs"));
+
+				Files.write(Paths.get("./logs/sourcesyntax.log"), srcSyntaxModel.toString().getBytes());
+
+			} catch (IOException e) {
+				logger.trace("Unable to log srcSyntaxModel");
+				// e.printStackTrace();
+			}
+		}
+
 		logger.debug("Source Syntax Model : \n" + srcSyntaxModel.toString());
 
 		srcSemanticModel = new ElementValueSet();
@@ -234,9 +249,9 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.info("buildSemanticModel : " + watch.toSplitString());
 
-		if (logger.isTraceEnabled()) {
-			logElementSet(srcSemanticModel);
-		}
+		// if (logger.isTraceEnabled()) {
+		// logElementSet(srcSemanticModel);
+		// }
 		// logger.debug("Source Semantic Model : \n" + srcSemanticModel.toString());
 
 	}
@@ -625,9 +640,6 @@ public class MdmiUow implements Runnable {
 							continue;
 						}
 
-						logger.trace(
-							sourceElementValue.getSemanticElement().getName() + " CREATING CORRESPONDNG ELEMENT " +
-									targetSementicElement.getName());
 						Stack<SemanticElement> mappedParentStack = new Stack<>();
 						getMappedStack(targetSementicElement, mappedParentStack);
 
@@ -662,13 +674,13 @@ public class MdmiUow implements Runnable {
 								// checkReferenceContainment = true;
 								// }
 
-								if ("Patient0988".equals(targetSementicElement.getName())) {
-									checkReferenceContainment = true;
-								}
-
-								if ("Beneficiary333".equals(targetSementicElement.getName())) {
-									checkReferenceContainment = true;
-								}
+								// if ("Patient0988".equals(targetSementicElement.getName())) {
+								// checkReferenceContainment = true;
+								// }
+								//
+								// if ("Beneficiary333".equals(targetSementicElement.getName())) {
+								// checkReferenceContainment = true;
+								// }
 								while (element != null && !checkReferenceContainment) {
 									for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
 
@@ -705,7 +717,7 @@ public class MdmiUow implements Runnable {
 									};
 									whattotransfer.forEach(go);
 									if (!found.isEmpty()) {
-										System.err.println("PROCESS REFERENCE " + targetSementicElement.getName());
+										System.err.println("Processing Reference " + targetSementicElement.getName());
 										checkReferenceContainment = true;
 									}
 
@@ -727,7 +739,12 @@ public class MdmiUow implements Runnable {
 						}
 
 						if (wholeStackMapped) {
-							logger.trace("CREATING TARGET ELEMENT " + targetSementicElement.getName());
+
+							logger.trace(
+								" Creating target element " + targetSementicElement.getName() +
+										" from source semantic element" +
+										sourceElementValue.getSemanticElement().getName());
+
 							XElementValue targetElementValue = new XElementValue(
 								targetSementicElement, trgSemanticModel);
 

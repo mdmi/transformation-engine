@@ -1755,11 +1755,11 @@ public class SemanticParser implements ISemanticParser {
 			if (elementValue.getSemanticElement() != null) {
 				for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
 
-					logger.trace("walkNullFlavor child " + child.getName());
+					// logger.trace("walkNullFlavor child " + child.getName());
 
 					if (child.isNullFlavor()) {
 
-						logger.trace("child is null flavor" + child.getName());
+						// logger.trace("child is null flavor" + child.getName());
 
 						boolean runForElement = true;
 

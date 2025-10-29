@@ -93,10 +93,11 @@ public class MdmiUtil {
 			if (logger.isTraceEnabled()) {
 
 				StringBuffer onlyinsourcelog = new StringBuffer();
+				StringBuffer onlyinTargetlog = new StringBuffer();
 				StringBuffer commonlog = new StringBuffer();
 
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnLeft().values()) {
-					logger.trace("SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier());
+					// logger.trace("SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier());
 
 					onlyinsourcelog.append(
 						"SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier()).append(
@@ -104,8 +105,8 @@ public class MdmiUtil {
 
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesInCommon().values()) {
-					logger.trace(
-						"SEER Elements : Common to both messages " + mber.getName() + " " + mber.getUniqueIdentifier());
+					// logger.trace(
+					// "SEER Elements : Common to both messages " + mber.getName() + " " + mber.getUniqueIdentifier());
 
 					commonlog.append(
 						"SEER Elements : Common to both messages " + mber.getName() + " " +
@@ -113,8 +114,10 @@ public class MdmiUtil {
 
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnRight().values()) {
-					logger.trace("SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier());
-
+					// logger.trace("SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier());
+					onlyinTargetlog.append(
+						"SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier()).append(
+							System.lineSeparator());
 				}
 
 				try {
@@ -122,6 +125,7 @@ public class MdmiUtil {
 
 					Files.write(Paths.get("./logs/OnlyInSource.log"), onlyinsourcelog.toString().getBytes());
 					Files.write(Paths.get("./logs/Common.log"), commonlog.toString().getBytes());
+					Files.write(Paths.get("./logs/OnlyTarget.log"), onlyinTargetlog.toString().getBytes());
 
 				} catch (IOException e) {
 					logger.trace("Unable to log datatypes");

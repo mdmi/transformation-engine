@@ -14,6 +14,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
@@ -145,21 +147,21 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		@Override
 		public void enterPredicate(PredicateContext ctx) {
-			logger.trace("enterPredicate " + ctx.getText());
+			// logger.trace("enterPredicate " + ctx.getText());
 			inPredicate = true;
 			super.enterPredicate(ctx);
 		}
 
 		@Override
 		public void exitPredicate(PredicateContext ctx) {
-			logger.trace("exitPredicate " + ctx.getText());
+			// logger.trace("exitPredicate " + ctx.getText());
 			inPredicate = false;
 			super.exitPredicate(ctx);
 		}
 
 		@Override
 		public void exitAxisSpecifier(AxisSpecifierContext ctx) {
-			logger.trace("exitAxisSpecifier " + ctx.getText());
+			// logger.trace("exitAxisSpecifier " + ctx.getText());
 			if (!inPredicate && "@".equals(ctx.getText())) {
 				isAttribute = true;
 			}
@@ -202,9 +204,9 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 	private org.w3c.dom.Node createElement(Element elemement, String xPath, boolean container) {
 
-		logger.trace("ELEMEMENT IS :" + elemement.getTagName());
+		// logger.trace("ELEMEMENT IS :" + elemement.getTagName());
 
-		logger.trace("XPATH IS :" + xPath);
+		// logger.trace("XPATH IS :" + xPath);
 
 		if (xPath.startsWith("@")) {
 			Attr attribute = elemement.getOwnerDocument().createAttribute(xPath.substring(1));
@@ -237,31 +239,31 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			}
 		}
 
-		logger.trace(elemement.getNodeName() + " creating " + xPath + " container " + container);
+		// logger.trace(elemement.getNodeName() + " creating " + xPath + " container " + container);
 
 		CharStream input = CharStreams.fromString(xPath);
 
 		XPathLexer lexer = new XPathLexer(input);
 
-		logger.trace("Creating CommonTokenStream");
+		// logger.trace("Creating CommonTokenStream");
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-		logger.trace("Creating XPathParser" + tokens);
+		// logger.trace("Creating XPathParser" + tokens);
 		XPathParser parser = new XPathParser(tokens);
 
 		parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
 		// parser.addErrorListener(SL4JBaseErrorListener.INSTANCE);
 
-		logger.trace("Creating ParseTreeWalker");
+		// logger.trace("Creating ParseTreeWalker");
 		ParseTreeWalker walker = new ParseTreeWalker();
 
-		logger.trace("Creating XPathExtractor");
+		// logger.trace("Creating XPathExtractor");
 		XPathExtractor extractor = new XPathExtractor(elemement, container);
-		logger.trace("walk");
+		// logger.trace("walk");
 
 		walker.walk(extractor, parser.main());
 
-		logger.trace("created " + extractor.node.getLocalName());
+		// logger.trace("created " + extractor.node.getLocalName());
 		return extractor.node;
 	}
 
@@ -424,8 +426,8 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 				String nodeXPathLocation = node.getLocation();
 
-				logger.trace(currentRelativeXPath);
-				logger.trace(nodeXPathLocation);
+				// logger.trace(currentRelativeXPath);
+				// logger.trace(nodeXPathLocation);
 
 				if (currentRelativeXPath.equals(nodeXPathLocation) ||
 						nodeXPathLocation.equals("@" + currentRelativeXPath)) {
@@ -514,6 +516,39 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				}
 			}
 
+			private String getDirectText(org.w3c.dom.Node node) {
+				StringBuilder text = new StringBuilder();
+				NodeList children = node.getChildNodes();
+				for (int i = 0; i < children.getLength(); i++) {
+					org.w3c.dom.Node child = children.item(i);
+					if (child.getNodeType() == org.w3c.dom.Node.TEXT_NODE) {
+						text.append(child.getTextContent());
+					}
+				}
+				return text.toString().trim();
+			}
+
+			public static Stack<String> extractElementsFromXPath(String xpath) {
+				if (xpath == null || xpath.isEmpty())
+					return new Stack<>();
+
+				// Clean up XPath
+				String cleaned = xpath.replaceAll("\\[", "/").replaceAll("\\]", "");
+				cleaned = cleaned.replaceAll("=['\"].*?['\"]", ""); // remove comparison
+
+				String[] parts = cleaned.split("/+");
+
+				// Create Stack
+				Stack<String> stack = new Stack<>();
+				List<String> list = Arrays.stream(parts).map(String::trim).filter(s -> !s.isEmpty()).collect(
+					Collectors.toList()); // returns mutable list
+
+				Collections.reverse(list);
+				list.forEach(stack::push);
+
+				return stack;
+			}
+
 			private List<Node> lookForMatch(final String qName) {
 
 				NodePredicate matches = null;
@@ -523,7 +558,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				for (Node currentBag : Lists.reverse(syntaxNodes)) {
 					depthCtr++;
 
-					logger.trace(currentBag.getName() + " lookForMatch " + qName);
+					logger.trace("Using MDMI Sytanx Node " + currentBag.getName() + " look For child element " + qName);
 
 					if (results.size() > 0) {
 						logger.info("Look for match using after found " + currentBag.getName());
@@ -553,7 +588,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						try {
 							String path = node.getLocation();
 
-							logger.trace("path " + path);
+							// logger.trace("path " + path);
 
 							int start = path.indexOf("[");
 							int end = node.getLocation().lastIndexOf("]");
@@ -606,21 +641,47 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 										p = domNodes.peek();
 									} else {
 										p = domNodes.peek().cloneNode(false);
-										if (!StringUtils.isEmpty(domNodes.peek().getTextContent())) {
-											p.setTextContent(domNodes.peek().getTextContent());
+
+										String directText = getDirectText(domNodes.peek());
+										if (!directText.isEmpty()) {
+											p.setTextContent(directText);
 										}
 
-										for (int childNodeCtr = 0; childNodeCtr < domNodes.peek().getChildNodes().getLength(); childNodeCtr++) {
-											org.w3c.dom.Node achildnode = domNodes.peek().getChildNodes().item(
-												childNodeCtr);
-											if (expression.contains(achildnode.getNodeName())) {
-												org.w3c.dom.Node clonedChildNode = p.appendChild(
-													achildnode.cloneNode(false));
-												if (!StringUtils.isEmpty(achildnode.getTextContent())) {
-													clonedChildNode.setTextContent(achildnode.getTextContent());
+										// Extract elements from XPath expression
+										Stack<String> expressions = extractElementsFromXPath(expression);
+
+										org.w3c.dom.Node currentSource = domNodes.peek();
+										org.w3c.dom.Node currentTarget = p;
+										boolean foundAll = true;
+
+										while (!expressions.isEmpty() && foundAll) {
+											String elementName = expressions.pop();
+											boolean found = false;
+
+											NodeList children = currentSource.getChildNodes();
+											for (int i = 0; i < children.getLength(); i++) {
+												org.w3c.dom.Node child = children.item(i);
+												if (elementName.contains(child.getNodeName())) {
+													currentSource = child;
+													org.w3c.dom.Node childClone = child.cloneNode(false);
+
+													String childText = getDirectText(currentSource);
+													if (!childText.isEmpty()) {
+														childClone.setTextContent(childText);
+													}
+
+													currentTarget.appendChild(childClone);
+													currentTarget = childClone;
+													found = true;
+													break;
 												}
 											}
+
+											if (!found) {
+												foundAll = false;
+											}
 										}
+
 									}
 
 									/*
@@ -679,9 +740,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 									if (isMatch) {
 
 										results.add(node);
-										logger.trace(
-											depthCtr + " loop count  " + path + " Matched using " +
-													currentBag.getName());
+										logger.trace("Found Syntax Node " + path + "  using " + currentBag.getName());
 									}
 								} catch (Exception e) {
 									NodeList nodes = (NodeList) xPath.evaluate(
@@ -692,22 +751,20 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 								}
 							} else {
 								results.add(node);
-								logger.trace(
-									depthCtr + " loop count  " + path + " Matched using " + currentBag.getName());
-								// logger.trace("Matched using " + currentBag.getName());
+								logger.trace(" Found Syntax Node " + path + "  using " + currentBag.getName());
 							}
 						} catch (XPathExpressionException ex) {
 							logger.error("Expression Error " + expression + ex.getMessage());
 						}
 
 					}
-					logger.trace("pushing bag" + currentBag.getName());
+					// logger.trace("pushing bag" + currentBag.getName());
 					matches.pushNode(currentBag);
 
 					/**
 					 * @TODO - Set depthctr at model level
 					 */
-					if ((results.size() > 0) || (depthCtr > 0)) {
+					if (results.size() > 0 || depthCtr > 0) {
 						break;
 					}
 
@@ -721,6 +778,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 											? n.getSemanticElement().getName()
 											: "NO SEMANTIC ELEMENT"));
 					}
+				}
+
+				if (results.isEmpty()) {
+					logger.info("HOOK FOR UNKOWN TAG " + qName);
 				}
 				return results;
 			}
@@ -789,7 +850,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 				List<Node> matchingSyntaxNodes = lookForMatch(qName);
 
-				if (matchingSyntaxNodes.isEmpty()) {
+				if (matchingSyntaxNodes.isEmpty() && !localName.equals(qName)) {
 					matchingSyntaxNodes = lookForMatch(localName);
 				}
 
@@ -825,9 +886,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 				if (matchingSyntaxNode != null) {
 
-					logger.trace(
-						"Processing Matched Element " + qName + " to " + matchingSyntaxNode.getName() +
-								" At location " + matchingSyntaxNode.getLocation());
+					logger.trace("Start Processing Matched Element Content " + qName);
 
 					YNode parentYBag = getYBagForParentNode(matchingSyntaxNode);
 
@@ -969,7 +1028,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					endTags.push(notFoundEndTagProcessor);
 				}
 
-				logger.trace("End Element " + qName);
+				logger.trace("End Processing Matched Element Content " + qName);
 
 			}
 
