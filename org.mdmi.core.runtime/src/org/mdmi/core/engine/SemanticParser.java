@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.emf.common.util.EList;
 import org.json.simple.JSONObject;
 import org.mdmi.Bag;
 import org.mdmi.Choice;
@@ -1129,7 +1130,7 @@ public class SemanticParser implements ISemanticParser {
 			String format = yleaf.getLeaf().getFormat();
 			yleaf.setValue((String) value);
 		} catch (Throwable throwable) {
-			throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
+			// throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
 	}
 
@@ -1370,7 +1371,7 @@ public class SemanticParser implements ISemanticParser {
 	 */
 	@Override
 	public void updateTargetSemanticModel(MessageModel mdl, ElementValueSet elementValueSet, ISyntaxNode yr,
-			Properties properties) {
+			Properties properties, JSONObject targetValues) {
 		StopWatch watch = new StopWatch();
 		watch.start();
 		logger.trace("Start updateSyntacticModel ");
@@ -1463,7 +1464,7 @@ public class SemanticParser implements ISemanticParser {
 		logger.trace("update all semantic containment: " + watch.toSplitString());
 		normalizeSemantics(mdl, elementValueSet, properties, containers);
 
-		walkComputedIn(mdl, elementValueSet, properties, containers);
+		walkComputedIn(mdl, elementValueSet, properties, targetValues, containers);
 		watch.split();
 		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn : " +
@@ -1523,12 +1524,10 @@ public class SemanticParser implements ISemanticParser {
 	}
 
 	void walkComputedIn(MessageModel mdl, ElementValueSet elementValueSet, Properties properties,
-			HashMap<String, IElementValue> containers) {
+			JSONObject targetValues, HashMap<String, IElementValue> containers) {
 
 		StopWatch watch = new StopWatch();
 		watch.start();
-
-		ArrayList<SemanticElement> computedElementsContainers = new ArrayList<>();
 
 		List<ComputedIn> computedElements = new ArrayList<>();
 
@@ -1553,6 +1552,20 @@ public class SemanticParser implements ISemanticParser {
 
 			for (SemanticElement se : computedIn.foundElements) {
 
+				EList<String> seProperties = se.getPropertyQualifier();
+
+				boolean shouldRun = true;
+				if (!seProperties.isEmpty()) {
+					for (String seProperty : seProperties) {
+						if (!StringUtils.isEmpty(seProperty) && !targetValues.containsKey(seProperty)) {
+							shouldRun = false;
+						}
+					}
+				}
+				if (!shouldRun) {
+					continue;
+				}
+
 				logger.trace("Process computedin " + se.getName());
 				String rule = se.getComputedInValue().getExpression();
 				String lang = se.getComputedInValue().getLanguage();
@@ -1567,7 +1580,8 @@ public class SemanticParser implements ISemanticParser {
 				} else {
 					logger.trace("Process computedin rule " + rule);
 					computedInElement.getParent().getUniqueId();
-					this.getSemanticInterpreter().execute(se.getName() + "_COMPUTEDIN", computedInElement, properties);
+					this.getSemanticInterpreter().execute(
+						se.getName() + "_COMPUTEDIN", computedInElement, targetValues);
 				}
 
 			}
@@ -1593,6 +1607,21 @@ public class SemanticParser implements ISemanticParser {
 							continue;
 						}
 
+						EList<String> foo = child.getPropertyQualifier();
+						boolean shouldRun = true;
+						if (!foo.isEmpty()) {
+							for (String bar : foo) {
+								System.err.println(bar);
+								if (!StringUtils.isEmpty(bar) && !targetValues.containsKey(bar)) {
+									shouldRun = false;
+								}
+							}
+						}
+
+						if (!shouldRun) {
+							continue;
+						}
+
 						logger.trace("Process computedin " + child.getName());
 						String rule = child.getComputedInValue().getExpression();
 						String lang = child.getComputedInValue().getLanguage();
@@ -1605,7 +1634,7 @@ public class SemanticParser implements ISemanticParser {
 							logger.trace("Process computedin rule " + rule);
 							computedInElement.getParent().getUniqueId();
 							this.getSemanticInterpreter().execute(
-								child.getName() + "_COMPUTEDIN", computedInElement, properties);
+								child.getName() + "_COMPUTEDIN", computedInElement, targetValues);
 						}
 
 					}
@@ -1639,7 +1668,7 @@ public class SemanticParser implements ISemanticParser {
 					logger.trace("Process computedin rule " + rule);
 
 					this.getSemanticInterpreter().execute(
-						child.getName() + "_COMPUTEDIN", computedInElement, properties);
+						child.getName() + "_COMPUTEDIN", computedInElement, targetValues);
 
 				}
 

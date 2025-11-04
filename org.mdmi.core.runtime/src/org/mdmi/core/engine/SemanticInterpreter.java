@@ -142,7 +142,8 @@ public class SemanticInterpreter {
 					if (!StringUtils.isEmpty(computedInExpression)) {
 						StringBuffer function = new StringBuffer();
 
-						function.append("function " + semanticElement.getName() + "_COMPUTEDIN" + "(value) {");
+						function.append(
+							"function " + semanticElement.getName() + "_COMPUTEDIN" + "(value,targetValues) {");
 
 						function.append(computedInExpression);
 						function.append("}");
@@ -156,7 +157,8 @@ public class SemanticInterpreter {
 					if (!StringUtils.isEmpty(computedOutExpression)) {
 						StringBuffer function = new StringBuffer();
 
-						function.append("function " + semanticElement.getName() + "_COMPUTEDOUT" + "(value) {");
+						function.append(
+							"function " + semanticElement.getName() + "_COMPUTEDOUT" + "(value,properties) {");
 
 						function.append(computedOutExpression);
 						function.append("}");

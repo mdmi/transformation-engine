@@ -221,7 +221,7 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 			log(semanticElement, 1, sb);
 		}
 
-		if (true && logger.isTraceEnabled()) {
+		if (logger.isTraceEnabled()) {
 			try {
 				Files.createDirectories(Paths.get("./logs"));
 				if (direction.equals(DIRECTION.TO)) {

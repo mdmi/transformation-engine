@@ -29,6 +29,11 @@ import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -781,9 +786,92 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				}
 
 				if (results.isEmpty()) {
+					org.w3c.dom.Node x = domNodes.peek();
 					logger.info("HOOK FOR UNKOWN TAG " + qName);
+					logger.info("HOOK FOR UNKOWN TAG, Path  " + getXPath(x));
+					try {
+						logger.info(toXmlString(createDocumentFromNode(x)));
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
 				}
 				return results;
+			}
+
+			public static String getXPath(org.w3c.dom.Node node) {
+				if (node == null) {
+					return null;
+				}
+
+				// If it's the document node
+				if (node.getNodeType() == org.w3c.dom.Node.DOCUMENT_NODE) {
+					return "/";
+				}
+
+				StringBuilder path = new StringBuilder();
+
+				while (node != null && node.getNodeType() != org.w3c.dom.Node.DOCUMENT_NODE) {
+					int index = getNodeIndex(node);
+					String nodeName = node.getNodeName();
+
+					// Add position only if there are siblings with the same name
+					if (index > 1) {
+						path.insert(0, "/" + nodeName + "[" + index + "]");
+					} else {
+						path.insert(0, "/" + nodeName);
+					}
+
+					node = node.getParentNode();
+				}
+
+				return path.toString();
+			}
+
+			private static int getNodeIndex(org.w3c.dom.Node node) {
+				int index = 1;
+				org.w3c.dom.Node prevSibling = node.getPreviousSibling();
+				while (prevSibling != null) {
+					if (prevSibling.getNodeType() == node.getNodeType() &&
+							prevSibling.getNodeName().equals(node.getNodeName())) {
+						index++;
+					}
+					prevSibling = prevSibling.getPreviousSibling();
+				}
+				return index;
+			}
+
+			public static Document createDocumentFromNode(org.w3c.dom.Node node) throws Exception {
+				if (node == null) {
+					throw new IllegalArgumentException("Node cannot be null");
+				}
+
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder builder = factory.newDocumentBuilder();
+				Document newDoc = builder.newDocument();
+
+				org.w3c.dom.Node importedNode = newDoc.importNode(node, true); // deep copy
+				newDoc.appendChild(importedNode);
+
+				return newDoc;
+			}
+
+			/**
+			 * Converts a Document (or Node) to a formatted XML String.
+			 */
+			public static String toXmlString(org.w3c.dom.Node node) throws Exception {
+				TransformerFactory tf = TransformerFactory.newInstance();
+				Transformer transformer = tf.newTransformer();
+
+				transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+				transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+
+				StringWriter writer = new StringWriter();
+				transformer.transform(new DOMSource(node), new StreamResult(writer));
+				return writer.toString();
 			}
 
 			private String getAttributeValue(Attributes attributes, String attribute) {

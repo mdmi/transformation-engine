@@ -666,7 +666,6 @@ public class MdmiUow implements Runnable {
 							boolean checkReferenceContainment = false;
 							if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
 
-								System.err.println(targetSementicElement.getName());
 								String[] referenceParameters = tmo.getRule().split(":");
 								String containmentParameter = referenceParameters[1];
 								IElementValue element = sourceElementValue.getParent();
@@ -717,7 +716,6 @@ public class MdmiUow implements Runnable {
 									};
 									whattotransfer.forEach(go);
 									if (!found.isEmpty()) {
-										System.err.println("Processing Reference " + targetSementicElement.getName());
 										checkReferenceContainment = true;
 									}
 
@@ -809,7 +807,6 @@ public class MdmiUow implements Runnable {
 
 				for (ConversionRule toMessage : c.getMapFromMdmi()) {
 					if (toMessage.getRule() != null && toMessage.getRule().startsWith("REFERENCE:")) {
-						// System.err.println("MISSING REFERENCES " + c.getName());
 
 						String[] referenceParameters = toMessage.getRule().split(":");
 
@@ -831,13 +828,6 @@ public class MdmiUow implements Runnable {
 
 															Reference ref = new Reference(x, sourceElement, c);
 															referencesToCreate.add(ref);
-															// System.err.println(
-															// "Create REFERENCE target Semantic Element" +
-															// c.getName());
-															// System.err.println(
-															// "SEER " + xxx.getBusinessElement().getName());
-															//
-															// System.err.println("SETTOPARENT " + x.getName());
 
 														}
 													}
@@ -847,60 +837,18 @@ public class MdmiUow implements Runnable {
 
 										}
 
-										// System.err.println(
-										// "MISSING REFERENCES FOUND REFERENCE " + referenceParameters[1] + " : " +
-										// againc.getName());
-
-										/*
-										 * logger.trace("CREATING TARGET ELEMENT " + targetSementicElement.getName());
-										 * XElementValue targetElementValue = new XElementValue(
-										 * targetSementicElement, trgSemanticModel);
-										 *
-										 * try {
-										 *
-										 * @SuppressWarnings("deprecation")
-										 * org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
-										 * targetSementicElement, tme.getBusinessElement(), tmo.getBusinessElement());
-										 * impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
-										 *
-										 * targettosource.put(targetElementValue, sourceElementValue);
-										 *
-										 * if (!sourcetotarget.containsKey(sourceElementValue)) {
-										 * sourcetotarget.put(sourceElementValue, new ArrayList<IElementValue>());
-										 * }
-										 * sourcetotarget.get(sourceElementValue).add(targetElementValue);
-										 *
-										 * } catch (Exception e) {
-										 * logger.error("ERROR IN CONVERSION", e);
-										 * }
-										 *
-										 */
-
 									}
 
 								}
 
 							}
 						}
-						// trgSemanticModel
+
 					}
 
 				}
 			}
 
-			// while (element != null && !checkReferenceContainment) {
-			// for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
-			//
-			// if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
-			// checkReferenceContainment = true;
-			// }
-			// }
-			// element = element.getParent();
-			// }
-			//
-			// for (x.getSemanticElement()) {
-
-			// }
 		}
 
 		for (Reference r : referencesToCreate) {
@@ -1302,7 +1250,8 @@ public class MdmiUow implements Runnable {
 		watch.start();
 
 		trgSemProv.updateTargetSemanticModel(
-			transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties);
+			transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties,
+			transferInfo.targetValues);
 		watch.split();
 		logger.info("Split processOutboundTargetMessage updateTargetSemanticModel : " + watch.toSplitString());
 
@@ -1591,8 +1540,6 @@ public class MdmiUow implements Runnable {
 	 *
 	 */
 	private void processTargetSemanticModel() {
-		logger.trace(
-			"processTargetSemanticModelprocessTargetSemanticModelprocessTargetSemanticModelprocessTargetSemanticModel");
 		logger.trace(
 			"processTargetSemanticModelprocessTargetSemanticModelprocessTargetSemanticModelprocessTargetSemanticModel");
 		Mdmi.INSTANCE().getTargetSemanticModelProcessors().targetSemanticModelProcessing(

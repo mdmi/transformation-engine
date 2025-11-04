@@ -118,7 +118,7 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 	public TransformCode transform(String source, String code, String target) {
 
 		if (!StringUtils.isEmpty(source) && source.equals(target)) {
-			logger.trace("SOURCE AND TARGET ARE THE SAME" + source);
+			logger.trace("Calling Get Valueset" + source);
 			return BLANK;
 		}
 		logger.debug("Transform from " + code + " from " + source + " to " + target);
