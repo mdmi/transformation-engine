@@ -59,6 +59,7 @@ import org.mdmi.core.ISyntacticParser;
 import org.mdmi.core.ISyntaxNode;
 import org.mdmi.core.MdmiException;
 import org.mdmi.core.MdmiMessage;
+import org.mdmi.core.engine.UnspecifiedNode;
 import org.mdmi.core.engine.YBag;
 import org.mdmi.core.engine.YChoice;
 import org.mdmi.core.engine.YLeaf;
@@ -292,7 +293,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		@Override
 		protected void endNode(org.w3c.dom.Node node) throws SAXException {
-			domNodes.pop();
+			lastPop = domNodes.pop();
 			super.endNode(node);
 		}
 
@@ -304,7 +305,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 	private Stack<org.w3c.dom.Node> domNodes = new Stack<>();
 
-	private void saxParse(final YBag yroot, final byte[] data) throws ParserConfigurationException, SAXException {
+	private org.w3c.dom.Node lastPop = null;
+
+	private void saxParse(final YBag yroot, final byte[] data, ArrayList<UnspecifiedNode> arrayList)
+			throws ParserConfigurationException, SAXException {
 
 		DefaultHandler2 mdmiHandler = new DefaultHandler2() {
 
@@ -785,18 +789,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					}
 				}
 
-				if (results.isEmpty()) {
-					org.w3c.dom.Node x = domNodes.peek();
-					logger.info("HOOK FOR UNKOWN TAG " + qName);
-					logger.info("HOOK FOR UNKOWN TAG, Path  " + getXPath(x));
-					try {
-						logger.info(toXmlString(createDocumentFromNode(x)));
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-				}
 				return results;
 			}
 
@@ -923,13 +915,11 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 			private boolean skipfirst = true;
 
+			String unspecifiedXPath = "";
+
 			@Override
 			public void startElement(String uri, String localName, String qName, Attributes attributes)
 					throws SAXException {
-
-				if ("table".equals(qName)) {
-					prune = true;
-				}
 
 				if (prune || this.skipfirst) {
 					this.skipfirst = false;
@@ -940,6 +930,53 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 				if (matchingSyntaxNodes.isEmpty() && !localName.equals(qName)) {
 					matchingSyntaxNodes = lookForMatch(localName);
+				}
+
+				if (matchingSyntaxNodes.isEmpty()) {
+
+					Bag b = (Bag) this.syntaxNodes.peek();
+
+					StringBuilder sb = new StringBuilder();
+					sb.append(getCurrentRelativePath(b));
+					sb.append(qName);
+
+					boolean isTruelyOrphan = true;
+					for (Node m : b.getNodes()) {
+
+						String[] path = m.getLocation().split("\\[");
+
+						if (!sb.toString().equals(path[0])) {
+							// System.err.println("Relative Node " + sb.toString());
+							// System.err.println("Child Node " + path[0]);
+							isTruelyOrphan = false;
+							break;
+						}
+					}
+					if (isTruelyOrphan) {
+						try {
+
+							String result = this.syntaxNodes.stream().map(Node::getName).collect(
+								Collectors.joining(", ", "[", "]"));
+							org.w3c.dom.Node x = domNodes.peek();
+
+							arrayList.add(
+								new UnspecifiedNode(
+									qName, toXmlString(createDocumentFromNode(x)), getXPath(x), result,
+									b.getNodes().stream().map(Node::getLocation).collect(Collectors.toList())));
+
+							prune = true;
+							org.w3c.dom.Node xxx = domNodes.peek();
+							logger.trace("Unspecificed Content found at model node " + result);
+							logger.trace("Start Unspecificed Content at " + getXPath(xxx));
+							unspecifiedXPath = getXPath(xxx);
+							// endTags.push(notFoundEndTagProcessor);
+
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+
 				}
 
 				Node matchingSyntaxNode = null;
@@ -1196,8 +1233,20 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					}
 				}
 
-				if ("table".equals(qName)) {
-					prune = false;
+				if (prune && !domNodes.isEmpty()) {
+
+					String result = getXPath(lastPop);
+					if (this.unspecifiedXPath.equals(result)) {
+						prune = false;
+
+						logger.trace("End Unspecificed Content at " + result);
+
+						if (!endTags.isEmpty()) {
+							EndTagProcessor etp = endTags.pop();
+							etp.process();
+						}
+					}
+
 				}
 
 			}
@@ -1265,7 +1314,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			MessageSyntaxModel syn = mdl.getSyntaxModel();
 			Node node = syn.getRoot();
 			yroot = new YBag((Bag) node, null);
-			saxParse((YBag) yroot, data);
+			saxParse((YBag) yroot, data, msg.getUnspecifiedNodes());
 		} catch (MdmiException ex) {
 			throw ex;
 		} catch (Exception ex) {
