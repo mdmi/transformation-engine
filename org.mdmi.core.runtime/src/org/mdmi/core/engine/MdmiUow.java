@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
@@ -51,6 +52,9 @@ import org.mdmi.core.MdmiTransferInfo;
 import org.mdmi.core.engine.javascript.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
  * MDMI Unit of Work. Will execute a transfer from the source to the target
@@ -164,16 +168,19 @@ public class MdmiUow implements Runnable {
 			processInboundTargetMessage();
 			watch.split();
 			logger.info("Split processInboundTargetMessage: " + watch.toSplitString());
-			// watch.split();
-			// logger.trace("Split Time Elapsed in MILLISECONDS: " + watch.getSplitNanoTime());
-			logger.info("Done processInboundTargetMessage " + Thread.currentThread().getName());
-			logger.info("Execute processConversions " + Thread.currentThread().getName());
 
+			logger.info("Execute processSourceSemanticModel " + Thread.currentThread().getName());
 			processSourceSemanticModel();
+			watch.split();
+			logger.info("Split processSourceSemanticModel: " + watch.toSplitString());
+
+			logger.info("Execute processConversions " + Thread.currentThread().getName());
 			processConversions();
+			watch.split();
+			logger.info("Split processConversions: " + watch.toSplitString());
+
 			logger.trace("processTargetSemanticModelprocessTargetSemanticModelprocessTargetSemanticModel");
 			processTargetSemanticModel();
-
 			watch.split();
 			logger.info("Split processConversions: " + watch.toSplitString());
 			logger.info("Done processConversions " + Thread.currentThread().getName());
@@ -182,11 +189,9 @@ public class MdmiUow implements Runnable {
 			processOutboundTargetMessage();
 			watch.split();
 			logger.info("Split processOutboundTargetMessage: " + watch.toSplitString());
-			// watch.split();
-			// logger.trace("Split Time Elapsed in MILLISECONDS: " + watch.getSplitNanoTime());
+
 			logger.info("Execute postProcess " + Thread.currentThread().getName());
 			postProcess();
-			logger.info("Done Processing " + Thread.currentThread().getName());
 			watch.split();
 			logger.info("Split postProcess: " + watch.toSplitString());
 			watch.stop();
@@ -222,6 +227,37 @@ public class MdmiUow implements Runnable {
 		logger.info("getSyntaxProvider and getSemanticProvider : " + watch.toSplitString());
 
 		srcSyntaxModel = srcSynProv.parse(transferInfo.sourceModel.getModel(), transferInfo.sourceMessage);
+
+		if (true || logger.isTraceEnabled()) {
+			try {
+				Files.createDirectories(Paths.get("./logs"));
+
+				Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+				String json = gson.toJson(transferInfo.sourceMessage.getUnspecifiedNodes());
+
+				Files.write(Paths.get("./logs/unspececified.json"), json.getBytes());
+
+				// // Write JSON to file
+				// try (FileWriter writer = new FileWriter("people.json")) {
+				// gson.toJson(people, writer);
+				// System.out.println("JSON file created: people.json");
+				// } catch (IOException e) {
+				// e.printStackTrace();
+				// }
+
+				// Files.write(
+				// Paths.get("./logs/" + messageGropu.getName() + "datatypemaps.js"), sb.toString().getBytes());
+			} catch (IOException e) {
+				logger.trace("Unable to log datatypes");
+				// e.printStackTrace();
+			}
+		}
+		// engine.eval(compile(sb.toString()));
+
+		for (UnspecifiedNode unspecified : transferInfo.sourceMessage.getUnspecifiedNodes()) {
+
+		}
 
 		watch.split();
 		logger.info("parse : " + watch.toSplitString());
@@ -489,6 +525,9 @@ public class MdmiUow implements Runnable {
 
 	void processConversions() {
 
+		this.transferInfo.targetMessage.getUnspecifiedNodes().addAll(
+			this.transferInfo.sourceMessage.getUnspecifiedNodes());
+
 		StopWatch watch = new StopWatch();
 		watch.start();
 
@@ -530,7 +569,7 @@ public class MdmiUow implements Runnable {
 		}
 
 		watch.split();
-		logger.trace("match : " + watch.toSplitString());
+		logger.info("match : " + watch.toSplitString());
 
 		HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget = new HashMap<>();
 		HashMap<IElementValue, IElementValue> targettosource = new HashMap<>();
@@ -542,7 +581,7 @@ public class MdmiUow implements Runnable {
 			transferInfo.targetProperties);
 
 		watch.split();
-		logger.trace("impl.initializeDI " + watch.getTime());
+		logger.info("impl.initializeDI " + watch.getTime());
 
 		boolean skipContainmentCheck = "SKIPCONTAINMENT".equals(transferInfo.targetModel.getGroup().getDescription());
 
@@ -800,57 +839,123 @@ public class MdmiUow implements Runnable {
 		//
 		// }
 
-		ArrayList<Reference> referencesToCreate = new ArrayList<>();
-		for (IElementValue x : trgSemanticModel.getAllElementValues()) {
+		// ArrayList<Reference> referencesToCreate = new ArrayList<>();
+		// for (IElementValue x : trgSemanticModel.getAllElementValues()) {
+		//
+		// for (SemanticElement c : x.getSemanticElement().getChildren()) {
+		//
+		// for (ConversionRule toMessage : c.getMapFromMdmi()) {
+		// if (toMessage.getRule() != null && toMessage.getRule().startsWith("REFERENCE:")) {
+		//
+		// String[] referenceParameters = toMessage.getRule().split(":");
+		//
+		// for (IElementValue again : trgSemanticModel.getAllElementValues()) {
+		// for (SemanticElement againc : again.getSemanticElement().getChildren()) {
+		//
+		// for (ConversionRule toMessageAgain : againc.getMapFromMdmi()) {
+		//
+		// if (toMessageAgain.getBusinessElement() != null && referenceParameters[1].equals(
+		// toMessageAgain.getBusinessElement().getName())) {
+		//
+		// for (ConversionRule xxx : c.getMapFromMdmi()) {
+		// if (xxx.getBusinessElement() != null) {
+		//
+		// for (IElementValue sourceElement : srcSemanticModel.getAllElementValues()) {
+		// for (ConversionRule toMdmi2 : sourceElement.getSemanticElement().getMapToMdmi()) {
+		// if (toMdmi2.getBusinessElement().getUniqueIdentifier().equals(
+		// xxx.getBusinessElement().getUniqueIdentifier())) {
+		//
+		// Reference ref = new Reference(x, sourceElement, c);
+		// referencesToCreate.add(ref);
+		//
+		// }
+		// }
+		//
+		// }
+		// }
+		//
+		// }
+		//
+		// }
+		//
+		// }
+		//
+		// }
+		// }
+		//
+		// }
+		//
+		// }
+		// }
+		//
+		// }
 
-			for (SemanticElement c : x.getSemanticElement().getChildren()) {
+		List<IElementValue> trgValues = trgSemanticModel.getAllElementValues();
+		List<IElementValue> srcValues = srcSemanticModel.getAllElementValues();
 
-				for (ConversionRule toMessage : c.getMapFromMdmi()) {
-					if (toMessage.getRule() != null && toMessage.getRule().startsWith("REFERENCE:")) {
+		List<Reference> referencesToCreate = new ArrayList<>();
 
-						String[] referenceParameters = toMessage.getRule().split(":");
-
-						for (IElementValue again : trgSemanticModel.getAllElementValues()) {
-							for (SemanticElement againc : again.getSemanticElement().getChildren()) {
-
-								for (ConversionRule toMessageAgain : againc.getMapFromMdmi()) {
-
-									if (toMessageAgain.getBusinessElement() != null && referenceParameters[1].equals(
-										toMessageAgain.getBusinessElement().getName())) {
-
-										for (ConversionRule xxx : c.getMapFromMdmi()) {
-											if (xxx.getBusinessElement() != null) {
-
-												for (IElementValue sourceElement : srcSemanticModel.getAllElementValues()) {
-													for (ConversionRule toMdmi2 : sourceElement.getSemanticElement().getMapToMdmi()) {
-														if (toMdmi2.getBusinessElement().getUniqueIdentifier().equals(
-															xxx.getBusinessElement().getUniqueIdentifier())) {
-
-															Reference ref = new Reference(x, sourceElement, c);
-															referencesToCreate.add(ref);
-
-														}
-													}
-
-												}
-											}
-
-										}
-
-									}
-
-								}
-
-							}
-						}
-
-					}
-
+		// ✅ 1. Build quick lookup for source business elements by uniqueIdentifier
+		Map<String, IElementValue> srcByBusinessId = new HashMap<>();
+		for (IElementValue srcVal : srcValues) {
+			for (ConversionRule toMdmi : srcVal.getSemanticElement().getMapToMdmi()) {
+				if (toMdmi.getBusinessElement() != null) {
+					srcByBusinessId.put(toMdmi.getBusinessElement().getUniqueIdentifier(), srcVal);
 				}
 			}
-
 		}
 
+		System.err.println("WTF trgValues " + trgValues.size());
+		// ✅ 2. Build quick lookup for target ConversionRules by businessElement name
+		Map<String, List<ConversionRule>> trgByBusinessName = new HashMap<>();
+		for (IElementValue trgVal : trgValues) {
+			for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
+				for (ConversionRule rule : child.getMapFromMdmi()) {
+					if (rule.getBusinessElement() != null) {
+						trgByBusinessName.computeIfAbsent(
+							rule.getBusinessElement().getName(), k -> new ArrayList<>()).add(rule);
+					}
+				}
+			}
+		}
+
+		// ✅ 3. Now handle only REFERENCE rules once
+		for (IElementValue trgVal : trgValues) {
+			for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
+				for (ConversionRule refRule : child.getMapFromMdmi()) {
+					String ruleText = refRule.getRule();
+					if (ruleText != null && ruleText.startsWith("xxxxREFERENCE:")) {
+
+						String[] refParams = ruleText.split(":");
+						if (refParams.length < 2)
+							continue; // guard
+
+						String referencedName = refParams[1];
+						List<ConversionRule> matchingTargetRules = trgByBusinessName.get(referencedName);
+						if (matchingTargetRules == null)
+							continue;
+
+						// For each matched target rule, find matching source rules
+						for (ConversionRule matchedTarget : matchingTargetRules) {
+							for (ConversionRule innerRule : child.getMapFromMdmi()) {
+								if (innerRule.getBusinessElement() == null)
+									continue;
+
+								String beId = innerRule.getBusinessElement().getUniqueIdentifier();
+								IElementValue matchingSrcVal = srcByBusinessId.get(beId);
+								if (matchingSrcVal != null) {
+									System.err.println("REFERENCE Element " + trgVal.getSemanticElement().getName());
+									System.err.println("REFERENCE Child " + child.getName());
+									referencesToCreate.add(new Reference(trgVal, matchingSrcVal, child));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		System.err.println("WTF " + referencesToCreate.size());
 		for (Reference r : referencesToCreate) {
 
 			try {
@@ -919,6 +1024,7 @@ public class MdmiUow implements Runnable {
 		 * If the single parent has content - populate the appropriate single instances per container
 		 *
 		 */
+
 		for (SemanticElement single : singles) {
 			SemanticElement theSingleParent = single.getParent();
 			while (theSingleParent != null) {
@@ -1013,9 +1119,7 @@ public class MdmiUow implements Runnable {
 
 		// IElementValue targetElementValue : targettosource.keySet()) {
 
-		for (
-
-		IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
+		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
 			if (targettosource.containsKey(targetElementValue)) {
 				if (targetElementValue.getParent() == null) {
 					if (targetElementValue.getSemanticElement().isMultipleInstances()) {
