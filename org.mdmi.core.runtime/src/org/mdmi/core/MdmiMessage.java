@@ -9,7 +9,9 @@
 package org.mdmi.core;
 
 import java.io.File;
+import java.util.ArrayList;
 
+import org.mdmi.core.engine.UnspecifiedNode;
 import org.mdmi.core.util.FileUtil;
 import org.mdmi.core.util.StringUtil;
 
@@ -22,6 +24,12 @@ public final class MdmiMessage {
 	private byte[] m_originalData;
 
 	private byte[] m_currentData;
+
+	ArrayList<UnspecifiedNode> unspecifiedNodes = new ArrayList<>();
+
+	public ArrayList<UnspecifiedNode> getUnspecifiedNodes() {
+		return unspecifiedNodes;
+	}
 
 	private static final byte[] BOM_UTF8 = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
 
