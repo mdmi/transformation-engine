@@ -1557,7 +1557,8 @@ public class SemanticParser implements ISemanticParser {
 				boolean shouldRun = true;
 				if (!seProperties.isEmpty()) {
 					for (String seProperty : seProperties) {
-						if (!StringUtils.isEmpty(seProperty) && !targetValues.containsKey(seProperty)) {
+						if (!StringUtils.isEmpty(seProperty) && targetValues != null &&
+								!targetValues.containsKey(seProperty)) {
 							shouldRun = false;
 						}
 					}

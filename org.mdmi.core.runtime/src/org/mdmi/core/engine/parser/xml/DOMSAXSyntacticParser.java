@@ -307,7 +307,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 	private org.w3c.dom.Node lastPop = null;
 
-	private void saxParse(final YBag yroot, final byte[] data, ArrayList<UnspecifiedNode> arrayList)
+	private void saxParse(final YBag yroot, final byte[] data, ArrayList<UnspecifiedNode> unSpecifiedNodes)
 			throws ParserConfigurationException, SAXException {
 
 		DefaultHandler2 mdmiHandler = new DefaultHandler2() {
@@ -935,31 +935,26 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				if (matchingSyntaxNodes.isEmpty()) {
 
 					Bag b = (Bag) this.syntaxNodes.peek();
-
-					StringBuilder sb = new StringBuilder();
-					sb.append(getCurrentRelativePath(b));
-					sb.append(qName);
-
-					boolean isTruelyOrphan = true;
+					boolean isUnspecified = true;
 					for (Node m : b.getNodes()) {
-
-						String[] path = m.getLocation().split("\\[");
-
-						if (!sb.toString().equals(path[0])) {
-							// System.err.println("Relative Node " + sb.toString());
-							// System.err.println("Child Node " + path[0]);
-							isTruelyOrphan = false;
+						String[] path = m.getLocation().split("/");
+						if (path.length > 1 && qName.equals(path[0])) {
+							isUnspecified = false;
 							break;
 						}
 					}
-					if (isTruelyOrphan) {
+					if (isUnspecified) {
 						try {
 
+							/*
+							 * If the element is not matched - and there is no child element that might match the element
+							 * Then set prune to true ti skip the rest of the child elements and push to the unspecified list
+							 */
 							String result = this.syntaxNodes.stream().map(Node::getName).collect(
 								Collectors.joining(", ", "[", "]"));
 							org.w3c.dom.Node x = domNodes.peek();
 
-							arrayList.add(
+							unSpecifiedNodes.add(
 								new UnspecifiedNode(
 									qName, toXmlString(createDocumentFromNode(x)), getXPath(x), result,
 									b.getNodes().stream().map(Node::getLocation).collect(Collectors.toList())));
@@ -969,11 +964,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 							logger.trace("Unspecificed Content found at model node " + result);
 							logger.trace("Start Unspecificed Content at " + getXPath(xxx));
 							unspecifiedXPath = getXPath(xxx);
-							// endTags.push(notFoundEndTagProcessor);
 
 						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+
+							logger.error("Error processing Unspecified content", e);
 						}
 					}
 
