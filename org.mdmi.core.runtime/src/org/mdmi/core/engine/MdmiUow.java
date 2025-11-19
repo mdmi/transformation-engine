@@ -23,7 +23,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -679,6 +678,10 @@ public class MdmiUow implements Runnable {
 							continue;
 						}
 
+						// if ((tmo.getRule() != null) && tmo.getRule().startsWith("REFERENCE")) {
+						// continue;
+						// }
+
 						Stack<SemanticElement> mappedParentStack = new Stack<>();
 						getMappedStack(targetSementicElement, mappedParentStack);
 
@@ -701,79 +704,67 @@ public class MdmiUow implements Runnable {
 							}
 						}
 
-						if (targetSementicReferences.contains(targetSementicElement.getName())) {
-							boolean checkReferenceContainment = false;
-							if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
-
-								String[] referenceParameters = tmo.getRule().split(":");
-								String containmentParameter = referenceParameters[1];
-								IElementValue element = sourceElementValue.getParent();
-								// if (containmentParameter.equals("OrganizationContainer")) {
-								// checkReferenceContainment = true;
-								// }
-
-								// if ("Patient0988".equals(targetSementicElement.getName())) {
-								// checkReferenceContainment = true;
-								// }
-								//
-								// if ("Beneficiary333".equals(targetSementicElement.getName())) {
-								// checkReferenceContainment = true;
-								// }
-								while (element != null && !checkReferenceContainment) {
-									for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
-
-										if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
-											checkReferenceContainment = true;
-										}
-									}
-									element = element.getParent();
-								}
-
-								if (!checkReferenceContainment) {
-
-									final List<String> found = new ArrayList<String>();
-
-									Consumer<? super IElementValue> go = new Consumer<IElementValue>() {
-
-										@Override
-										public void accept(IElementValue t) {
-
-											if (t.getSemanticElement() != null) {
-												for (ConversionRule zzz : t.getSemanticElement().getMapToMdmi()) {
-
-													if (containmentParameter.equals(
-														zzz.getBusinessElement().getName())) {
-														found.add("found");
-													}
-												}
-											}
-
-											// TODO Auto-generated method stub
-
-										}
-
-									};
-									whattotransfer.forEach(go);
-									if (!found.isEmpty()) {
-										checkReferenceContainment = true;
-									}
-
-									//
-									// for (whattotransfer.) {
-									//
-									// }
-									// // sourceElementValue.
-									// // if (targetSementicElement.getParent() != null) {
-									// // // if (srcSemanticModel.) {
-									// // //
-									// // // }
-									// // }
-
-								}
-							}
-
-							wholeStackMapped = false; // checkReferenceContainment;
-						}
+						// if (targetSementicReferences.contains(targetSementicElement.getName())) {
+						// boolean checkReferenceContainment = false;
+						// if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
+						//
+						// String[] referenceParameters = tmo.getRule().split(":");
+						// String containmentParameter = referenceParameters[1];
+						// IElementValue element = sourceElementValue.getParent();
+						// while (element != null && !checkReferenceContainment) {
+						// for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
+						// if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
+						// checkReferenceContainment = true;
+						// }
+						// }
+						// element = element.getParent();
+						// }
+						//
+						// if (!checkReferenceContainment) {
+						//
+						// final List<String> found = new ArrayList<String>();
+						//
+						// Consumer<? super IElementValue> go = new Consumer<IElementValue>() {
+						//
+						// @Override
+						// public void accept(IElementValue t) {
+						//
+						// if (t.getSemanticElement() != null) {
+						// for (ConversionRule zzz : t.getSemanticElement().getMapToMdmi()) {
+						//
+						// if (containmentParameter.equals(
+						// zzz.getBusinessElement().getName())) {
+						// found.add("found");
+						// }
+						// }
+						// }
+						//
+						// // TODO Auto-generated method stub
+						//
+						// }
+						//
+						// };
+						// whattotransfer.forEach(go);
+						// if (!found.isEmpty()) {
+						// checkReferenceContainment = true;
+						// }
+						//
+						// //
+						// // for (whattotransfer.) {
+						// //
+						// // }
+						// // // sourceElementValue.
+						// // // if (targetSementicElement.getParent() != null) {
+						// // // // if (srcSemanticModel.) {
+						// // // //
+						// // // // }
+						// // // }
+						//
+						// }
+						// }
+						//
+						// wholeStackMapped = false; // checkReferenceContainment;
+						// }
 
 						if (wholeStackMapped) {
 
@@ -921,77 +912,109 @@ public class MdmiUow implements Runnable {
 
 		// ✅ 3. Now handle only REFERENCE rules once
 		for (IElementValue trgVal : trgValues) {
-			for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
-				for (ConversionRule refRule : child.getMapFromMdmi()) {
-					String ruleText = refRule.getRule();
-					if (ruleText != null && ruleText.startsWith("xxxxREFERENCE:")) {
+			if (trgVal.getSemanticElement().getDatatype() != null &&
+					"Container".equals(trgVal.getSemanticElement().getDatatype().getName())) {
 
-						String[] refParams = ruleText.split(":");
-						if (refParams.length < 2)
-							continue; // guard
+				for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
+					for (ConversionRule refRule : child.getMapFromMdmi()) {
+						String ruleText = refRule.getRule();
+						if (ruleText != null && ruleText.startsWith("REFERENCE:")) {
+							if (targettosource.containsKey(trgVal)) {
 
-						String referencedName = refParams[1];
-						List<ConversionRule> matchingTargetRules = trgByBusinessName.get(referencedName);
-						if (matchingTargetRules == null)
-							continue;
+								IElementValue sourceElement = targettosource.get(trgVal);
+								System.err.println("Target Continer With " + trgVal.getSemanticElement().getName());
+								System.err.println("Target Child Semeantic With " + child.getName());
+								System.err.println(
+									"Source Continer With " + sourceElement.getSemanticElement().getName());
+								for (IElementValue srcChild : sourceElement.getChildren()) {
 
-						// For each matched target rule, find matching source rules
-						for (ConversionRule matchedTarget : matchingTargetRules) {
-							for (ConversionRule innerRule : child.getMapFromMdmi()) {
-								if (innerRule.getBusinessElement() == null)
-									continue;
+									if (srcChild.getSemanticElement().getDatatype() != null &&
+											"Container".equals(srcChild.getSemanticElement().getDatatype().getName())) {
 
-								String beId = innerRule.getBusinessElement().getUniqueIdentifier();
-								IElementValue matchingSrcVal = srcByBusinessId.get(beId);
-								if (matchingSrcVal != null) {
-									System.err.println("REFERENCE Element " + trgVal.getSemanticElement().getName());
-									System.err.println("REFERENCE Child " + child.getName());
-									referencesToCreate.add(new Reference(trgVal, matchingSrcVal, child));
+										for (ConversionRule subreule : srcChild.getSemanticElement().getMapToMdmi()) {
+											System.err.println(refRule.getBusinessElement().getName());
+											System.err.println(refRule.getBusinessElement().getUniqueIdentifier());
+											System.err.println(subreule.getBusinessElement().getName());
+											System.err.println(subreule.getBusinessElement().getUniqueIdentifier());
+											if (refRule.getBusinessElement().getUniqueIdentifier().equals(
+												subreule.getBusinessElement().getUniqueIdentifier())) {
+												System.err.println(
+													"Matching Reference " + srcChild.getSemanticElement().getName());
+
+												// look up source to target and clone
+												referencesToCreate.add(new Reference(trgVal, srcChild, child));
+											}
+
+										}
+
+									}
+
 								}
+
+								// refRule.getBusinessElement()
 							}
 						}
+
 					}
 				}
+				// referencesToCreate.add(new Reference(trgVal, matchingSrcVal, child));
 			}
+
+			// for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
+			// for (ConversionRule refRule : child.getMapFromMdmi()) {
+			// String ruleText = refRule.getRule();
+			// if (ruleText != null && ruleText.startsWith("REFERENCE:")) {
+			//
+			// String[] refParams = ruleText.split(":");
+			// if (refParams.length < 2)
+			// continue; // guard
+			//
+			// String referencedName = refParams[1];
+			// List<ConversionRule> matchingTargetRules = trgByBusinessName.get(referencedName);
+			// if (matchingTargetRules == null)
+			// continue;
+			//
+			// // For each matched target rule, find matching source rules
+			// for (ConversionRule matchedTarget : matchingTargetRules) {
+			// for (ConversionRule innerRule : child.getMapFromMdmi()) {
+			// if (innerRule.getBusinessElement() == null)
+			// continue;
+			//
+			// String beId = innerRule.getBusinessElement().getUniqueIdentifier();
+			// IElementValue matchingSrcVal = srcByBusinessId.get(beId);
+			// if (matchingSrcVal != null) {
+			// referencesToCreate.add(new Reference(trgVal, matchingSrcVal, child));
+			// }
+			// }
+			// }
+			// }
+			// }
+			// }
 		}
 
-		System.err.println("WTF " + referencesToCreate.size());
 		for (Reference r : referencesToCreate) {
-
 			try {
-
-				// @SuppressWarnings("deprecation")
-
 				for (ConversionRule tme : r.getSource().getSemanticElement().getMapToMdmi()) {
-
 					for (ConversionRule tmo : r.getTarget().getMapToMdmi()) {
-
 						if (!tme.getBusinessElement().getUniqueIdentifier().equals(
 							tmo.getBusinessElement().getUniqueIdentifier())) {
 							continue;
 						}
-
-						logger.trace("Create Reference Source Element" + r.getSource().getName());
-						logger.trace("Create Reference Target Semantic Element " + r.getTarget().getName());
-						logger.trace("Create Reference Parent " + r.getParent().getName());
-
-						logger.trace("CREATING Reference TARGET ELEMENT " + r.getTarget().getName());
+						logger.info("Create Reference Source Element" + r.getSource().getName());
+						logger.info("Create Reference Target Semantic Element " + r.getTarget().getName());
+						logger.info("Create Reference Parent " + r.getParent().getName());
+						logger.info("CREATING Reference TARGET ELEMENT " + r.getTarget().getName());
 						XElementValue targetElementValue = new XElementValue(r.getTarget(), trgSemanticModel);
-
 						targetElementValue.setParent(r.getParent());
 						r.getParent().addChild(targetElementValue);
-
 						org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
 							r.getTarget(), tme.getBusinessElement(), tmo.getBusinessElement());
 						impl.convert((XElementValue) r.getSource(), ci, targetElementValue);
-
 						targettosource.put(targetElementValue, r.getSource());
-
 						if (!sourcetotarget.containsKey(r.getSource())) {
 							sourcetotarget.put(r.getSource(), new ArrayList<IElementValue>());
 						}
 						sourcetotarget.get(r.getSource()).add(targetElementValue);
-
 					}
 				}
 
@@ -1082,24 +1105,24 @@ public class MdmiUow implements Runnable {
 								logger.trace("SINGLE ELEMENT PARENT : " + single.getName());
 								logger.trace(
 									"SOURCE ELEMENT CONTAINER : " + elementValue.getSemanticElement().getName());
-								XElementValue singleElementValue = new XElementValue(single, trgSemanticModel);
-								try {
-									@SuppressWarnings("deprecation")
-									org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
-										single, sourceRI, conversionRule.getBusinessElement());
-									impl.convert((XElementValue) elementValue, ci, singleElementValue);
-
-									List<IElementValue> foundElements = trgSemanticModel.getElementValuesByName(
-										theSingleParent);
-
-									for (IElementValue parentElementValue : foundElements) {
-										parentElementValue.addChild(singleElementValue);
-										singleElementValue.setParent(parentElementValue);
-									}
-
-								} catch (Exception e) {
-									logger.error("ERROR IN CONVERSION", e);
-								}
+								// XElementValue singleElementValue = new XElementValue(single, trgSemanticModel);
+								// try {
+								// @SuppressWarnings("deprecation")
+								// org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
+								// single, sourceRI, conversionRule.getBusinessElement());
+								// impl.convert((XElementValue) elementValue, ci, singleElementValue);
+								//
+								// List<IElementValue> foundElements = trgSemanticModel.getElementValuesByName(
+								// theSingleParent);
+								//
+								// for (IElementValue parentElementValue : foundElements) {
+								// parentElementValue.addChild(singleElementValue);
+								// singleElementValue.setParent(parentElementValue);
+								// }
+								//
+								// } catch (Exception e) {
+								// logger.error("ERROR IN CONVERSION", e);
+								// }
 
 							}
 						}
