@@ -415,15 +415,19 @@ class ConversionImpl {
 							sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
 
 				} else {
-					refereneces.put(target, (XElementValue) sourceSemanticElement.getParent());
+					// refereneces.put(target, (XElementValue) sourceSemanticElement.getParent());
 				}
 
 			} else {
-				if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
-					guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
 
+				if (trg.getSemanticElement().isMultipleInstances()) {
+					if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
+						guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
+
+					}
 				} else {
-					refereneces.put(target, sourceSemanticElement);
+
+					guidValue = "urn:uuid:" + sourceSemanticElement.getUniqueId();
 				}
 			}
 

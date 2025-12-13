@@ -142,7 +142,7 @@ public class SemanticParser implements ISemanticParser {
 
 	private void logSplit(StopWatch watch, String phase) {
 		watch.split();
-		logger.trace("buildSemanticModel - {} {}", phase, watch.toSplitString());
+		logger.info("buildSemanticModel - {} {}", phase, watch.toSplitString());
 	}
 
 	private boolean isContainerWithParent(IElementValue ses) {
@@ -1134,36 +1134,41 @@ public class SemanticParser implements ISemanticParser {
 		}
 	}
 
+	/**
+	 * @deprecated Not sure what this was doing but overhead now
+	 * @param xe
+	 */
+	@Deprecated
 	private void setRelations(XElementValue xe) {
-		SemanticElement me = xe.getSemanticElement();
-		Collection<SemanticElementRelationship> rels = me.getRelationships();
-		for (SemanticElementRelationship rel : rels) {
-			SemanticElement trg = rel.getRelatedSemanticElement();
-			// 1. Check child elements
-			if (trg == null) {
-				continue;
-			}
-			List<IElementValue> xevs = valueSet.getChildElementValuesByType(trg, xe);
-			if (xevs != null && 0 < xevs.size()) {
-				for (IElementValue xev : xevs) {
-					xe.addRelation(rel.getName(), xev);
-				}
-				return;
-			}
-			// 2. Check child elements of the owner
-			xevs = valueSet.getOwnerElementValuesByType(trg, xe);
-			if (xevs != null && 0 < xevs.size()) {
-				for (IElementValue xev : xevs) {
-					xe.addRelation(rel.getName(), xev);
-				}
-				return;
-			}
-			// 3. Last resort: get all
-			xevs = valueSet.getElementValuesByType(trg);
-			for (IElementValue xev : xevs) {
-				xe.addRelation(rel.getName(), xev);
-			}
-		}
+		// SemanticElement me = xe.getSemanticElement();
+		// Collection<SemanticElementRelationship> rels = me.getRelationships();
+		// for (SemanticElementRelationship rel : rels) {
+		// SemanticElement trg = rel.getRelatedSemanticElement();
+		// // 1. Check child elements
+		// if (trg == null) {
+		// continue;
+		// }
+		// List<IElementValue> xevs = valueSet.getChildElementValuesByType(trg, xe);
+		// if (xevs != null && 0 < xevs.size()) {
+		// for (IElementValue xev : xevs) {
+		// xe.addRelation(rel.getName(), xev);
+		// }
+		// return;
+		// }
+		// // 2. Check child elements of the owner
+		// xevs = valueSet.getOwnerElementValuesByType(trg, xe);
+		// if (xevs != null && 0 < xevs.size()) {
+		// for (IElementValue xev : xevs) {
+		// xe.addRelation(rel.getName(), xev);
+		// }
+		// return;
+		// }
+		// // 3. Last resort: get all
+		// xevs = valueSet.getElementValuesByType(trg);
+		// for (IElementValue xev : xevs) {
+		// xe.addRelation(rel.getName(), xev);
+		// }
+		// }
 	}
 
 	/**
@@ -1557,8 +1562,16 @@ public class SemanticParser implements ISemanticParser {
 				boolean shouldRun = true;
 				if (!seProperties.isEmpty()) {
 					for (String seProperty : seProperties) {
+
+						// There is logic in teh editor to add a prefix of fhirresource
+						// not sure why but add logic to address it here
+						String[] notsure = seProperty.split(":");
+
 						if (!StringUtils.isEmpty(seProperty) && targetValues != null &&
-								!targetValues.containsKey(seProperty)) {
+								!targetValues.containsKey(
+									(notsure.length == 2
+											? notsure[1]
+											: notsure[0]))) {
 							shouldRun = false;
 						}
 					}
@@ -1612,7 +1625,6 @@ public class SemanticParser implements ISemanticParser {
 						boolean shouldRun = true;
 						if (!foo.isEmpty()) {
 							for (String bar : foo) {
-								System.err.println(bar);
 								if (!StringUtils.isEmpty(bar) && !targetValues.containsKey(bar)) {
 									shouldRun = false;
 								}
