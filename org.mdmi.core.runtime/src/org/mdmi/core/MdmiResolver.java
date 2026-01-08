@@ -392,11 +392,15 @@ public class MdmiResolver {
 									"org.mdmi.engine.parsers.QuerySyntaxParser").getDeclaredConstructor().newInstance();
 							case "ML":
 								return new MLSyntacticParser();
+							case "PIQI":
+								return new org.mdmi.core.engine.parsers.json.JsonSyntacticParser();
+
 							// (ISyntacticParser) Class.forName(
 							// "org.mdmi.engine.parsers.MLSyntacticParser").newInstance();
 							default:
 								// TreeWalker tw;
-								return new org.mdmi.core.engine.parser.xml.DOMSAXSyntacticParser(messageGroup.getName());
+								return new org.mdmi.core.engine.parser.xml.DOMSAXSyntacticParser(
+									messageGroup.getName());
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -413,7 +417,12 @@ public class MdmiResolver {
 
 		ISemanticParser getSemanticParser() {
 
+			// if ("PIQI".equals(messageGroup.getName())) {
+			// return new PiqiParser();
+			// } else {
+
 			return new SemanticParser(messageGroup);
+			// }
 
 		}
 	} // MdmiMapResolver$MT

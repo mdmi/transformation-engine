@@ -126,7 +126,7 @@ public class DatamapInterpreter {
 			}
 			engine.eval(compile(sb.toString()));
 		} catch (ScriptException e) {
-			logger.error("aaaaaaINVALID JAVA SCRIPT", e.getMessage());
+			logger.error("INVALID JAVA SCRIPT", e.getMessage());
 		}
 
 		inv = (Invocable) engine;

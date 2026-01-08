@@ -938,10 +938,17 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					boolean isUnspecified = true;
 					for (Node m : b.getNodes()) {
 						String[] path = m.getLocation().split("/");
-						if (path.length > 1 && qName.equals(path[0])) {
-							isUnspecified = false;
-							break;
+						if (path.length > 1) {
+							for (int i = 0; i < path.length - 1; i++) {
+								if (qName.equals(path[i])) {
+									isUnspecified = false;
+								}
+							}
 						}
+						// if (path.length > 1 && qName.equals(path[0])) {
+						// isUnspecified = false;
+						// break;
+						// }
 					}
 					if (isUnspecified) {
 						try {
@@ -960,10 +967,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 									b.getNodes().stream().map(Node::getLocation).collect(Collectors.toList())));
 
 							prune = true;
-							org.w3c.dom.Node xxx = domNodes.peek();
+							org.w3c.dom.Node topNode = domNodes.peek();
 							logger.trace("Unspecificed Content found at model node " + result);
-							logger.trace("Start Unspecificed Content at " + getXPath(xxx));
-							unspecifiedXPath = getXPath(xxx);
+							logger.trace("Start Unspecificed Content at " + getXPath(topNode));
+							unspecifiedXPath = getXPath(topNode);
 
 						} catch (Exception e) {
 
