@@ -932,7 +932,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					matchingSyntaxNodes = lookForMatch(localName);
 				}
 
-				if (matchingSyntaxNodes.isEmpty()) {
+				if (matchingSyntaxNodes.isEmpty() && this.syntaxNodes.peek() instanceof Bag) {
 
 					Bag b = (Bag) this.syntaxNodes.peek();
 					boolean isUnspecified = true;

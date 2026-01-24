@@ -113,4 +113,21 @@ public interface IElementValue {
 	 * @return
 	 */
 	public String getUniqueId();
+
+	/*
+	 * =====================================================
+	 * Visitor Interface
+	 * =====================================================
+	 */
+	public interface ElementValueVisitor {
+		void visit(IElementValue value);
+	}
+
+	default void accept(ElementValueVisitor visitor) {
+		visitor.visit(this);
+		for (IElementValue child : getChildren()) {
+			child.accept(visitor);
+		}
+	}
+
 } // IElementValue
