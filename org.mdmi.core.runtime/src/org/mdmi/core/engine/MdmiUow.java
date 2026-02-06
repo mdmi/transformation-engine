@@ -21,8 +21,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -48,7 +50,6 @@ import org.mdmi.core.ISyntaxNode;
 import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver;
 import org.mdmi.core.MdmiTransferInfo;
-import org.mdmi.core.engine.ReferenceVisitorExample.ReferenceBuildingVisitor;
 import org.mdmi.core.engine.javascript.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -493,36 +494,8 @@ public class MdmiUow implements Runnable {
 	 * Else reverse mappings might not work
 	 */
 
-	// private void findMatchingSourceChildren(IElementValue sourceElement, ConversionRule refRule, IElementValue trgVal,
-	// IElementValue child, List<Reference> referencesToCreate) {
-	//
-	// for (IElementValue srcChild : sourceElement.getChildren()) {
-	//
-	// System.err.println("Checking src elements " + srcChild.getSemanticElement().getName());
-	//
-	// if (srcChild.getSemanticElement().getDatatype() != null &&
-	// "Container".equals(srcChild.getSemanticElement().getDatatype().getName())) {
-	//
-	// for (ConversionRule subrule : srcChild.getSemanticElement().getMapToMdmi()) {
-	//
-	// if (refRule.getBusinessElement().getUniqueIdentifier().equals(
-	// subrule.getBusinessElement().getUniqueIdentifier())) {
-	//
-	// logger.trace("Found Matching Reference " + srcChild.getSemanticElement().getName());
-	//
-	// referencesToCreate.add(new Reference(trgVal, srcChild, child));
-	// }
-	// }
-	//
-	// // 🔁 Recurse into nested containers
-	// findMatchingSourceChildren(srcChild, refRule, trgVal, child, referencesToCreate);
-	// }
-	// }
-	// }
-
 	private boolean isManyToOneGlobals(MessageGroup sourceMessageGroup, MessageGroup targetMessageGroup) {
 
-		// this.transferInfo
 		if (sourceMessageGroup.getName().toUpperCase().startsWith("FHIR") &&
 				targetMessageGroup.getName().toUpperCase().startsWith("CDA")) {
 			return true;
@@ -917,11 +890,6 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		/*
-		 * public ReferenceBuildingVisitor(Collection<IElementValue> allTargetValues,
-		 * Map<IElementValue, IElementValue> targetToSource, List<Reference> referencesToCreate, Logger logger) {
-		 */
-
 		ReferenceBuildingVisitor visitor = new ReferenceBuildingVisitor(
 			trgValues, targettosource, referencesToCreate, logger);
 
@@ -929,87 +897,12 @@ public class MdmiUow implements Runnable {
 			trgVal.accept(visitor);
 		}
 
-		// ReferenceBuildingVisitor visitor = new ReferenceBuildingVisitor(
-		// trgValues, targettosource, referencesToCreate, logger);
-		//
-		// for (IElementValue trgVal : trgValues) {
-		// trgVal.accept(visitor);
-		// }
+		Set<String> semanticReferences = referencesToCreate.stream().map(
+			r -> r.target == null
+					? null
+					: r.target.getUniqueId()).filter(Objects::nonNull).collect(Collectors.toSet());
 
-		// ✅ 3. Now handle only REFERENCE rules once
-		// for (IElementValue trgVal : trgValues) {
-		// if (trgVal.getSemanticElement().getDatatype() != null &&
-		// "Container".equals(trgVal.getSemanticElement().getDatatype().getName())) {
-		//
-		// for (SemanticElement child : trgVal.getSemanticElement().getChildren()) {
-		// for (ConversionRule refRule : child.getMapFromMdmi()) {
-		// String ruleText = refRule.getRule();
-		// if (ruleText != null && ruleText.startsWith("REFERENCE:")) {
-		// System.err.println("target reference " + child.getName());
-		//
-		// if (targettosource.containsKey(trgVal)) {
-		// IElementValue sourceElement = targettosource.get(trgVal);
-		// System.err.println("sourceElement " + sourceElement.getSemanticElement().getName());
-		// if (child.isMultipleInstances()) {
-		// for (IElementValue srcChild : sourceElement.getChildren()) {
-		// System.err.println(
-		// "Checking src xelments " + srcChild.getSemanticElement().getName());
-		// if (srcChild.getSemanticElement().getDatatype() != null && "Container".equals(
-		// srcChild.getSemanticElement().getDatatype().getName())) {
-		// // System.err.println(
-		// // "srcChild.getSemanticElement() " + srcChild.getSemanticElement());
-		// for (ConversionRule subreule : srcChild.getSemanticElement().getMapToMdmi()) {
-		// if (refRule.getBusinessElement().getUniqueIdentifier().equals(
-		// subreule.getBusinessElement().getUniqueIdentifier())) {
-		// logger.trace(
-		// "Found Matching Reference " +
-		// srcChild.getSemanticElement().getName());
-		//
-		// // look up source to target and clone
-		// referencesToCreate.add(new Reference(trgVal, srcChild, child));
-		// }
-		//
-		// }
-		//
-		// }
-		//
-		// }
-		// } else {
-		// for (IElementValue single : trgValues) {
-		// if (single.getSemanticElement().getDatatype() != null && "Container".equals(
-		// single.getSemanticElement().getDatatype().getName())) {
-		// for (ConversionRule subreule : single.getSemanticElement().getMapToMdmi()) {
-		// if (refRule.getBusinessElement().getUniqueIdentifier().equals(
-		// subreule.getBusinessElement().getUniqueIdentifier())) {
-		// logger.trace(
-		// "Found Matching Reference " +
-		// single.getSemanticElement().getName());
-		//
-		// // look up source to target and clone
-		// referencesToCreate.add(new Reference(trgVal, single, child));
-		// }
-		//
-		// }
-		//
-		// }
-		//
-		// }
-		// }
-		//
-		// // refRule.getBusinessElement()
-		// }
-		// }
-		//
-		// }
-		// }
-		// // referencesToCreate.add(new Reference(trgVal, matchingSrcVal, child));
-		// }
-		//
-		// }
-
-		for (
-
-		Reference r : referencesToCreate) {
+		for (Reference r : referencesToCreate) {
 			try {
 				for (ConversionRule tme : r.getSource().getSemanticElement().getMapToMdmi()) {
 					for (ConversionRule tmo : r.getTarget().getMapToMdmi()) {
@@ -1137,17 +1030,8 @@ public class MdmiUow implements Runnable {
 
 		watch.split();
 		logger.trace("singles : " + watch.toSplitString());
-		/*
-		 * Loop over and set semantic containers
-		 */
 
-		// for (
-
-		// IElementValue targetElementValue : targettosource.keySet()) {
-
-		for (
-
-		IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
+		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
 			if (targettosource.containsKey(targetElementValue)) {
 				if (targetElementValue.getParent() == null) {
 					if (targetElementValue.getSemanticElement().isMultipleInstances()) {
@@ -1159,7 +1043,6 @@ public class MdmiUow implements Runnable {
 						}
 						if (sourceParent != null && sourcetotarget.containsKey(sourceParent)) {
 							for (IElementValue targetParent : sourcetotarget.get(sourceParent)) {
-
 								if (targetParent.getSemanticElement().getRelationshipByName("QUALIFIER") != null) {
 									for (SemanticElement child : targetParent.getSemanticElement().getChildren()) {
 
@@ -1167,26 +1050,21 @@ public class MdmiUow implements Runnable {
 											child.getUniqueId())) {
 											targetParent.addChild(targetElementValue);
 										}
-
 									}
-
 								} else {
-									targetParent.addChild(targetElementValue);
+									if (!semanticReferences.contains(targetParent.getSemanticElement().getUniqueId())) {
+										targetParent.addChild(targetElementValue);
+									}
 								}
-
 							}
-
 						}
-
 					}
 				}
 			}
 
 		}
 
-		for (
-
-		Object o : impl.refereneces.keySet()) {
+		for (Object o : impl.refereneces.keySet()) {
 			XDataStruct xValue = (XDataStruct) o;
 			XElementValue foo = impl.refereneces.get(o);
 			IElementValue bar = sourcetotarget.get(impl.refereneces.get(o)).get(0);
@@ -1208,10 +1086,8 @@ public class MdmiUow implements Runnable {
 				if (targetElementValue.getParent() != null) {
 					for (IElementValue child : targetElementValue.getChildren()) {
 						if (isBreadCrumb(child.getSemanticElement())) {
-							// logger.trace("isBreadCrumb 1 " + child.getSemanticElement().getName());
 							for (SemanticElement child2 : targetElementValue.getParent().getSemanticElement().getChildren()) {
 								if (isBreadCrumb(child2)) {
-									// logger.trace("isBreadCrumb 2 " + child2.getName());
 									XElementValue idElementValue = new XElementValue(
 										child2, trgSemanticModel, iterator);
 									idElementValue.setValue(child.value());
