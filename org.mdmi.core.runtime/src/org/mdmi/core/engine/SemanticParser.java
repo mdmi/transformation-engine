@@ -462,6 +462,7 @@ public class SemanticParser implements ISemanticParser {
 
 	// a leaf mapped to a simple type (must be simple)
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner) {
+
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
 		if (me == null) {
 			throw new MdmiException("Null SE for node {0}", MdmiUtil.getNodePath(yleaf.getNode()));
@@ -469,9 +470,20 @@ public class SemanticParser implements ISemanticParser {
 		XElementValue xe = new XElementValue(me, valueSet);
 		if (owner != null) {
 			if (!xe.getSemanticElement().getParent().getName().equals(owner.getSemanticElement().getName())) {
-				XElementValue inject = new XElementValue(me.getParent(), valueSet);
+
+				XElementValue inject = null;
+				for (IElementValue xx : owner.getChildren()) {
+					if (xx.getSemanticElement().getName().equals(me.getParent().getName())) {
+						inject = (XElementValue) xx;
+					}
+				}
+				if (inject == null) {
+					inject = new XElementValue(me.getParent(), valueSet);
+					owner.addChild(inject);
+				}
+				// XElementValue inject = new XElementValue(me.getParent(), valueSet);
 				inject.addChild(xe);
-				owner.addChild(inject);
+
 			} else {
 				owner.addChild(xe);
 			}

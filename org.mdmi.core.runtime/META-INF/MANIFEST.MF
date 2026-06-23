@@ -6,7 +6,9 @@ Bundle-Vendor: MDIX, www.mdixinc.com
 Bundle-SymbolicName: org.mdmi.core.runtime;singleton:=true
 Bundle-Version: 4.1.1.qualifier
 Bundle-ClassPath: .,
- 3rdparty/antlr/antlr-4.13.2-complete.jar
+ 3rdparty/antlr/antlr-4.13.2-complete.jar,
+ 3rdparty/google/closure-compiler-v20221102.jar,
+ 3rdparty/json/json-simple-1.1.1.jar
 Require-Bundle: org.apache.commons.cli,
  org.apache.commons.lang3,
  org.mdmi.ecore,
