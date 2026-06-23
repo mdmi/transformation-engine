@@ -82,7 +82,6 @@ public class SemanticParser implements ISemanticParser {
 		StopWatch watch = new StopWatch();
 		watch.start();
 
-		// --- Validate inputs ---
 		if (mdl == null || yroot == null || eset == null) {
 			throw new IllegalArgumentException("Null argument!");
 		}
@@ -96,23 +95,19 @@ public class SemanticParser implements ISemanticParser {
 						: yroot.getNode().getName()));
 		}
 
-		// --- Initialize elements ---
 		List<XElementValue> initialElements = new ArrayList<>();
 		if (values != null) {
 			initialElements.addAll(setInitialValues(mdl, values));
 		}
 
-		// --- Step 1: Create all XElementValues ---
 		getElements((YNode) yroot);
 		logSplit(watch, "getElements");
 
-		// --- Step 2: Set relationships ---
 		for (IElementValue xe : valueSet.getAllElementValues()) {
 			setRelations((XElementValue) xe);
 		}
 		logSplit(watch, "set relationships");
 
-		// --- Step 3: Process container/computed semantic elements ---
 		List<IElementValue> foundElements = new ArrayList<>();
 		for (IElementValue ses : eset.getAllElementValues()) {
 			if (isContainerWithParent(ses)) {
@@ -126,7 +121,6 @@ public class SemanticParser implements ISemanticParser {
 		}
 		logSplit(watch, "process computed semantic elements");
 
-		// --- Step 4: Attach initial elements to top-level parents ---
 		for (IElementValue elementValue : valueSet.getAllElementValues()) {
 			if (elementValue.getParent() == null && !initialElements.contains(elementValue)) {
 				for (IElementValue initial : initialElements) {
@@ -181,8 +175,6 @@ public class SemanticParser implements ISemanticParser {
 		return yroot;
 	}
 
-	// ==================================================================================================================
-	// create top-level root node
 	private YNode createYNode(Node node) {
 		if (node instanceof Bag) {
 			return new YBag((Bag) node, null);
@@ -283,11 +275,9 @@ public class SemanticParser implements ISemanticParser {
 		}
 		XElementValue xe = new XElementValue(me, eset);
 		if (owner != null) {
-			// set parent-child relationship
 			owner.addChild(xe);
 		}
 
-		// set the value
 		MDMIDatatype dt = me.getDatatype();
 		if (!dt.isChoice()) {
 			throw new MdmiException(
@@ -303,23 +293,19 @@ public class SemanticParser implements ISemanticParser {
 			for (YNode yn : yns) {
 				Node n = yn.getNode();
 				if (n.getSemanticElement() != null) {
-					// the choice has only child elements
 					for (YNode yyn : yns) {
 						getMappedElement(yyn, xe, eset);
 					}
 					break; // we found the choice
 				} else {
-					// the choice has only fields
 					String fieldName = n.getFieldName();
 					if (null != fieldName) {
-						// if fieldName is null it means it is
 						XValue xv = xc.setXValue(fieldName);
 						for (YNode yyn : yns) {
 							getValue(yyn, xv, xe, eset);
 						}
 						break; // we found the choice
 					}
-					// try the next node if this was no match
 				}
 			}
 		} catch (Throwable throwable) {
@@ -359,7 +345,6 @@ public class SemanticParser implements ISemanticParser {
 
 		SemanticElement me = node.getSemanticElement();
 		if (me == null) {
-			// node is not mapped to an element or field (one of the top nodes)
 			if (yroot instanceof YBag) {
 				YBag y = (YBag) yroot;
 				LinkedList<YNode> yns = y.getYNodes();
@@ -373,9 +358,7 @@ public class SemanticParser implements ISemanticParser {
 					getElements(yn);
 				}
 			}
-			// else we have a not-mapped Leaf, we ignore it
 		} else {
-			// top node is mapped to an element, no owner
 			getMappedElement(yroot, null);
 		}
 	}
@@ -460,7 +443,6 @@ public class SemanticParser implements ISemanticParser {
 		return semanticRollupInterpreters.get(key);
 	}
 
-	// a leaf mapped to a simple type (must be simple)
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner) {
 
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
@@ -481,7 +463,6 @@ public class SemanticParser implements ISemanticParser {
 					inject = new XElementValue(me.getParent(), valueSet);
 					owner.addChild(inject);
 				}
-				// XElementValue inject = new XElementValue(me.getParent(), valueSet);
 				inject.addChild(xe);
 
 			} else {
@@ -489,10 +470,8 @@ public class SemanticParser implements ISemanticParser {
 			}
 		}
 
-		// set the value
 		MDMIDatatype dt = me.getDatatype();
 		if (!(dt.isSimple() || dt.isExternal())) {
-			// dt.isSimple();
 			if ((!"InstanceIdentifier".equals(dt.getName())) && (!"Telecom".equals(dt.getName()))) {
 				throw new MdmiException("Invalid mapping for node " + MdmiUtil.getNodePath(yleaf.getNode()));
 			}
@@ -507,7 +486,6 @@ public class SemanticParser implements ISemanticParser {
 		}
 	}
 
-	// a leaf mapped to a simple type (must be simple)
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner, ElementValueSet eset) {
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
 		if (me == null) {
@@ -515,11 +493,9 @@ public class SemanticParser implements ISemanticParser {
 		}
 		XElementValue xe = new XElementValue(me, eset);
 		if (owner != null) {
-			// set parent-child relationship
 			owner.addChild(xe);
 		}
 
-		// set the value
 		MDMIDatatype dt = me.getDatatype();
 		if (!(dt.isSimple() || dt.isExternal())) {
 			throw new MdmiException("Invalid mapping for node bbbb " + MdmiUtil.getNodePath(yleaf.getNode()));
@@ -542,11 +518,9 @@ public class SemanticParser implements ISemanticParser {
 		}
 		XElementValue xe = new XElementValue(me, valueSet);
 		if (owner != null) {
-			// set parent-child relationship
 			owner.addChild(xe);
 		}
 
-		// set the value
 		MDMIDatatype dt = me.getDatatype();
 		if (dt == null || !dt.isStruct()) {
 			return;
@@ -561,12 +535,10 @@ public class SemanticParser implements ISemanticParser {
 
 				Node n = yn.getNode();
 				if (n.getSemanticElement() != null) {
-					// child element
 					getMappedElement(yn, xe);
 				} else if (yn instanceof YChoice) {
 					getMappedElement(yn, xe);
 				} else {
-					// field
 					Stack<Node> nodes = new Stack<>();
 					Node currentNode = n;
 
@@ -619,11 +591,9 @@ public class SemanticParser implements ISemanticParser {
 		}
 		XElementValue xe = new XElementValue(me, eset);
 		if (owner != null) {
-			// set parent-child relationship
 			owner.addChild(xe);
 		}
 
-		// set the value
 		MDMIDatatype dt = me.getDatatype();
 		if (dt == null || !dt.isStruct()) {
 			throw new MdmiException("Invalid mapping for node dddd " + MdmiUtil.getNodePath(ybag.getNode()));
@@ -637,15 +607,12 @@ public class SemanticParser implements ISemanticParser {
 			for (YNode yn : yns) {
 				Node n = yn.getNode();
 				if (n.getSemanticElement() != null) {
-					// child element
 					getMappedElement(yn, xe, eset);
 				} else {
-					// field
 					String fieldName = n.getFieldName();
 					if (fieldName == null) {
 						continue; // will ignore it for now, assuming unmapped syntax node
 					}
-					// throw new MdmiException("Field Name is Null " + MdmiUtil.getNodePath(n));
 					XValue xv = xs.getXValue(fieldName);
 					if (xv == null) {
 						throw new MdmiException(
@@ -697,12 +664,10 @@ public class SemanticParser implements ISemanticParser {
 			YNode yn0 = yns.get(0);
 			Node n = yn0.getNode();
 			if (n.getSemanticElement() != null) {
-				// the choice has only child elements
 				for (YNode yn : yns) {
 					getMappedElement(yn, owner);
 				}
 			} else {
-				// the choice has only fields
 				String fieldName = n.getFieldName();
 				XValue xvalue = xc.setXValue(fieldName);
 				for (YNode yn : yns) {
@@ -725,12 +690,10 @@ public class SemanticParser implements ISemanticParser {
 			YNode yn0 = yns.get(0);
 			Node n = yn0.getNode();
 			if (n.getSemanticElement() != null) {
-				// the choice has only child elements
 				for (YNode yn : yns) {
 					getMappedElement(yn, owner, eset);
 				}
 			} else {
-				// the choice has only fields
 				String fieldName = n.getFieldName();
 				XValue xvalue = xc.setXValue(fieldName);
 				for (YNode yn : yns) {
@@ -769,10 +732,8 @@ public class SemanticParser implements ISemanticParser {
 		for (YNode yn : yns) {
 			Node n = yn.getNode();
 			if (n.getSemanticElement() != null) {
-				// child element
 				getMappedElement(yn, owner);
 			} else {
-				// field
 				String fieldName = n.getFieldName();
 				XValue xvalue = xs.getXValue(fieldName);
 				if (xvalue == null) {
@@ -795,10 +756,8 @@ public class SemanticParser implements ISemanticParser {
 		for (YNode yn : yns) {
 			Node n = yn.getNode();
 			if (n.getSemanticElement() != null) {
-				// child element
 				getMappedElement(yn, owner, eset);
 			} else {
-				// field
 				String fieldName = n.getFieldName();
 				XValue xvalue = xs.getXValue(fieldName);
 				if (xvalue == null) {
@@ -823,7 +782,6 @@ public class SemanticParser implements ISemanticParser {
 	 */
 	void normalizeSemanticContainers(ElementValueSet elementValueSet, IElementValue parent,
 			ListIterator<IElementValue> iterator, HashMap<String, IElementValue> containers) {
-		// = new HashMap<>();
 		ArrayList<IElementValue> remove = new ArrayList<>();
 		for (IElementValue child : parent.getChildren()) {
 			if (!child.getSemanticElement().getParent().getName().equals(parent.getSemanticElement().getName())) {
@@ -908,7 +866,6 @@ public class SemanticParser implements ISemanticParser {
 			 */
 
 			logger.trace("Processing SEMANTICROLLUP " + se.getName());
-			// organize data by parent and rules by semantic element
 			for (SemanticElementRelationship relationship : se.getRelationships()) {
 
 				logger.trace(
@@ -949,7 +906,6 @@ public class SemanticParser implements ISemanticParser {
 							valuesByParent.get(theParentForRollup).add(iev2);
 						} else {
 
-							// check for root owned
 							logger.error("Invalid Semantic Rollup Relationship, no apparent parent " + se.getName());
 						}
 
@@ -980,13 +936,11 @@ public class SemanticParser implements ISemanticParser {
 			 *
 			 *
 			 */
-			// for each parent - create a new element and roll up all the values leveraging the relationship rule
 			for (IElementValue parentValue : valuesByParent.keySet()) {
 				XElementValue computedInElement = new XElementValue(se, elementValueSet);
 				parentValue.addChild(computedInElement);
 				computedInElement.setParent(parentValue);
 				for (IElementValue rollupValue : valuesByParent.get(parentValue)) {
-					// Need a value to process
 					if (rollupValue.getXValue().getValue() != null) {
 						if (rollupValue.getXValue().getValue() instanceof String) {
 							String rollupRule = rulesBySemanticElement.get(rollupValue.getSemanticElement());
@@ -1136,13 +1090,11 @@ public class SemanticParser implements ISemanticParser {
 		Node node = yleaf.getNode();
 		MDMIDatatype dt = getDatatype(node);
 		if (!(dt.isSimple() || dt.isExternal())) {
-			// throw new MdmiException("Invalid mapping for node " + MdmiUtil.getNodePath(yleaf.getNode()));
 		}
 		try {
 			String format = yleaf.getLeaf().getFormat();
 			yleaf.setValue((String) value);
 		} catch (Throwable throwable) {
-			// throw new MdmiException("Error proccessing node " + MdmiUtil.getNodePath(yleaf.getNode()), throwable);
 		}
 	}
 
@@ -1152,35 +1104,6 @@ public class SemanticParser implements ISemanticParser {
 	 */
 	@Deprecated
 	private void setRelations(XElementValue xe) {
-		// SemanticElement me = xe.getSemanticElement();
-		// Collection<SemanticElementRelationship> rels = me.getRelationships();
-		// for (SemanticElementRelationship rel : rels) {
-		// SemanticElement trg = rel.getRelatedSemanticElement();
-		// // 1. Check child elements
-		// if (trg == null) {
-		// continue;
-		// }
-		// List<IElementValue> xevs = valueSet.getChildElementValuesByType(trg, xe);
-		// if (xevs != null && 0 < xevs.size()) {
-		// for (IElementValue xev : xevs) {
-		// xe.addRelation(rel.getName(), xev);
-		// }
-		// return;
-		// }
-		// // 2. Check child elements of the owner
-		// xevs = valueSet.getOwnerElementValuesByType(trg, xe);
-		// if (xevs != null && 0 < xevs.size()) {
-		// for (IElementValue xev : xevs) {
-		// xe.addRelation(rel.getName(), xev);
-		// }
-		// return;
-		// }
-		// // 3. Last resort: get all
-		// xevs = valueSet.getElementValuesByType(trg);
-		// for (IElementValue xev : xevs) {
-		// xe.addRelation(rel.getName(), xev);
-		// }
-		// }
 	}
 
 	/**
@@ -1197,7 +1120,6 @@ public class SemanticParser implements ISemanticParser {
 
 	}
 
-	// set the node value(s) for all fields
 	private void setYNodeValues(YNode ynode, Object value) {
 		if (value == null) {
 			return;
@@ -1243,9 +1165,6 @@ public class SemanticParser implements ISemanticParser {
 		for (Iterator<Node> it = nodes.iterator(); it.hasNext();) {
 			Node n = it.next();
 
-			// if (n instanceof Bag) {
-			//
-			// }
 			String fieldName = n.getFieldName();
 			if (fieldName == null) {
 				continue;
@@ -1293,7 +1212,6 @@ public class SemanticParser implements ISemanticParser {
 		}
 		YNode yroot = (YNode) yr;
 
-		// Locate the root semantic element
 		SemanticElement rootSemantic = null;
 		for (IElementValue elementValue : elementValueSet.getAllElementValues()) {
 			if (elementValue.getSemanticElement() != null) {
@@ -1322,8 +1240,6 @@ public class SemanticParser implements ISemanticParser {
 
 		watch.split();
 		logger.trace("fillInTheBlanks: " + watch.toSplitString());
-
-		// update all semantic containment
 
 		ListIterator<IElementValue> iterator = elementValueSet.getAllElementValues().listIterator();
 
@@ -1397,7 +1313,6 @@ public class SemanticParser implements ISemanticParser {
 			throw new IllegalArgumentException("Null argument!");
 		}
 
-		// Locate the root semantic element
 		SemanticElement rootSemantic = null;
 		for (IElementValue elementValue : elementValueSet.getAllElementValues()) {
 			if (elementValue.getSemanticElement() != null) {
@@ -1430,8 +1345,6 @@ public class SemanticParser implements ISemanticParser {
 		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel fillInTheBlanks : " +
 					watch.toSplitString());
-
-		// update all semantic containment
 
 		ListIterator<IElementValue> iterator = elementValueSet.getAllElementValues().listIterator();
 
@@ -1575,8 +1488,6 @@ public class SemanticParser implements ISemanticParser {
 				if (!seProperties.isEmpty()) {
 					for (String seProperty : seProperties) {
 
-						// There is logic in teh editor to add a prefix of fhirresource
-						// not sure why but add logic to address it here
 						String[] notsure = seProperty.split(":");
 
 						if (!StringUtils.isEmpty(seProperty) && targetValues != null &&
@@ -1668,9 +1579,6 @@ public class SemanticParser implements ISemanticParser {
 			}
 
 		}
-		// }
-
-		// }
 
 		watch.split();
 		logger.info(
@@ -1809,11 +1717,7 @@ public class SemanticParser implements ISemanticParser {
 			if (elementValue.getSemanticElement() != null) {
 				for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
 
-					// logger.trace("walkNullFlavor child " + child.getName());
-
 					if (child.isNullFlavor()) {
-
-						// logger.trace("child is null flavor" + child.getName());
 
 						boolean runForElement = true;
 
@@ -1878,7 +1782,6 @@ public class SemanticParser implements ISemanticParser {
 
 					if (parent != null) {
 						parent.addChild(element);
-						// element.setParent(parent);
 					} else {
 						initalElements.add(element);
 					}

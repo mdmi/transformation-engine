@@ -144,7 +144,6 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 			return logger.isErrorEnabled();
 		}
 		return false;
-		// return logger.isTraceEnabled();
 	}
 
 	void serializeXDataStruct(XDataStruct v, int indent, StringBuffer sb) {
@@ -231,7 +230,6 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 				}
 			} catch (IOException e) {
 				logger.trace("Unable to log datatypes");
-				// e.printStackTrace();
 			}
 		}
 	}

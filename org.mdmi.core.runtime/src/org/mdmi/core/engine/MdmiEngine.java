@@ -66,36 +66,4 @@ public final class MdmiEngine {
 
 	}
 
-	/**
-	 * @param sMod
-	 * @param tMsg
-	 * @param bers
-	 * @param semanticContainer
-	 * @param location
-	 */
-	// public void executeTransfer(MdmiModelRef sMod, MdmiMessage tMsg, ArrayList<MDMIBusinessElementReference> bers,
-	// SemanticElement semanticContainer, List<SemanticElement> semanticElements, String location) {
-	// MdmiUow uow = new MdmiUow(this);
-	// uow.run(sMod, tMsg, bers, semanticContainer, semanticElements, location);
-	// sourceSyntaxModel = uow.getSrcSyntaxModel();
-	// targetSyntaxModel = uow.getTrgSyntaxModel();
-	//
-	// }
-
-	// private ISyntacticParser getSyntaxProvider(MessageGroup messageGroup) {
-	// for (MessageModel s : messageGroup.getModels()) {
-	// return m_owner.getResolver().getSyntacticParser(messageGroup.getName(), s.getMessageModelName());
-	// }
-	// return null;
-	//
-	// }
-	//
-	// private ISemanticParser getSemanticProvider(MessageGroup messageGroup) {
-	// for (MessageModel s : messageGroup.getModels()) {
-	// return m_owner.getResolver().getSemanticParser(messageGroup.getName(), s.getMessageModelName());
-	// }
-	// return null;
-	//
-	// }
-
 } // MdmiEngine

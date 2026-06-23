@@ -40,7 +40,6 @@ public interface IExpressionInterpreter {
 	 *            The rule to evaluate (as a string).
 	 * @return True if the constraint is valid (evaluates to true).
 	 */
-	// public boolean evalConstraint(IElementValue context, String rule);
 
 	/**
 	 * Evaluate an action language rule in the given context.
@@ -72,5 +71,4 @@ public interface IExpressionInterpreter {
 	 *            The rule to evaluate (as a string).
 	 * @return errors The list of compilation errors.
 	 */
-	// public List<String> compileConstraint(SemanticElement se, String rule);
 } // IExpressionInterpreter

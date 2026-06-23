@@ -105,7 +105,6 @@ public final class XmlNamespaceContext implements NamespaceContext {
 		addImpl(prefix, namespaceUri);
 	}
 
-	// implementation of the add - checks for duplicates.
 	private void addImpl(String prefix, String namespaceUri) {
 		if (prefix.length() <= 0) {
 			prefix = defaultNsPrefix;
@@ -140,7 +139,6 @@ public final class XmlNamespaceContext implements NamespaceContext {
 		return ctx;
 	}
 
-	// scan the document for namespaces - this may be expensive depending on the document size.
 	private static void scan(Element root, XmlNamespaceContext ctx) {
 		NamedNodeMap attrs = root.getAttributes();
 		if (attrs != null) {

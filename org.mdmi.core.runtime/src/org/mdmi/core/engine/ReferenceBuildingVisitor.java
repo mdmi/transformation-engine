@@ -42,7 +42,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 
 	public static Logger logger = LoggerFactory.getLogger(ReferenceBuildingVisitor.class);
 
-	// 🔁 Cycle detection (identity-based)
 	private final Set<IElementValue> visited = Collections.newSetFromMap(new IdentityHashMap<>());
 
 	/**
@@ -64,7 +63,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 	@Override
 	public void visit(IElementValue trgVal) {
 
-		// 🔒 cycle guard
 		if (!visited.add(trgVal)) {
 			logger.trace("Cycle detected at {}", trgVal.getSemanticElement().getName());
 			return;
@@ -129,7 +127,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 	private void handleMultiple(IElementValue trgVal, IElementValue sourceElement, SemanticElement child,
 			ConversionRule refRule) {
 
-		// identity-based cycle detection
 		Set<IElementValue> visited = Collections.newSetFromMap(new IdentityHashMap<>());
 
 		visitSourceChildren(trgVal, sourceElement, child, refRule, visited);
@@ -138,7 +135,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 	private void visitSourceChildren(IElementValue trgVal, IElementValue current, SemanticElement child,
 			ConversionRule refRule, Set<IElementValue> visited) {
 
-		// 🔁 cycle guard
 		if (!visited.add(current)) {
 			return;
 		}
@@ -151,7 +147,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 
 			logger.trace("Checking src elements " + srcChild.getSemanticElement().getName());
 
-			// original matching logic
 			for (ConversionRule subRule : srcChild.getSemanticElement().getMapToMdmi()) {
 
 				if (matches(refRule, subRule)) {
@@ -161,7 +156,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 				}
 			}
 
-			// 🔁 recurse deeper
 			visitSourceChildren(trgVal, srcChild, child, refRule, visited);
 		}
 	}

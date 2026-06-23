@@ -60,7 +60,6 @@ public class SemanticInterpreter {
 	 */
 	public SemanticInterpreter(MessageGroup messgaeGroup) {
 		super();
-		// date.js
 		manager = new ScriptEngineManager();
 		engine = manager.getEngineByName("JavaScript");
 
@@ -176,7 +175,6 @@ public class SemanticInterpreter {
 					Files.write(
 						Paths.get("./logs/" + messgaeGroup.getName() + "semanticRollups.js"), sb.toString().getBytes());
 				} catch (IOException e) {
-					// Ignore issue
 				}
 
 			}
@@ -214,30 +212,19 @@ public class SemanticInterpreter {
 		Compiler compiler = new Compiler();
 
 		CompilerOptions options = new CompilerOptions();
-		// Advanced mode is used here, but additional options could be set, too.
 		CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
 
 		SourceFile sf;
-		// try {
 		sf = SourceFile.fromCode("mappings.js", code, SourceKind.STRONG);
-		// sf = SourceFile.fromInputStream(
-		// "mappings.js", new ByteArrayInputStream(code.getBytes()), StandardCharsets.UTF_8);
 		ArrayList<SourceFile> inputFiles = new ArrayList<>();
 		inputFiles.add(sf);
 
 		Result result = compiler.compile(new ArrayList<SourceFile>(), inputFiles, options);
 
 		if (!result.success) {
-			// throw new ProcessException("Failure when processing javascript files!");
 		}
 
 		return compiler.toSource();
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		//
-		// }
-		//
-		// return code;
 	}
 
 	void compare(String function, Object source, Object target) {
@@ -248,42 +235,6 @@ public class SemanticInterpreter {
 				/**
 				 * @TODO Add better comparison
 				 */
-				// int sourceValueCounter = 0;
-				// int targetValueCounter = 0;
-				// for (String sourceField : sourceStruct.getFields()) {
-				// Object sourceValue = sourceStruct.getValue(sourceField);
-				// if (sourceValue != null) {
-				// sourceValueCounter++;
-				// }
-				// }
-				//
-				// for (String targetField : targetStruct.getFields()) {
-				// Object targetValue = targetStruct.getValue(targetField);
-				// if (targetValue != null) {
-				// targetValueCounter++;
-				// }
-				// }
-				//
-				// if (sourceValueCounter != targetValueCounter) {
-				// logger.trace(function + " NOT EQUAL ");
-				// logger.trace(" Source Had " + sourceValueCounter);
-				// logger.trace(" Target Had " + targetValueCounter);
-				//
-				// for (String sourceField : sourceStruct.getFields()) {
-				// Object sourceValue = sourceStruct.getValue(sourceField);
-				// if (sourceValue != null) {
-				// logger.trace(" Source Value " + sourceField + " == " + sourceValue);
-				// }
-				// }
-				//
-				// for (String targetField : targetStruct.getFields()) {
-				// Object targetValue = targetStruct.getValue(targetField);
-				// if (targetValue != null) {
-				// logger.trace(" Target Value " + targetField + " == " + targetValue);
-				// }
-				// }
-				//
-				// }
 
 			}
 		}
@@ -311,7 +262,6 @@ public class SemanticInterpreter {
 
 	public boolean update(String function, Object value) {
 
-		// synchronized (inv) {
 		try {
 			/*
 			 * @TODO Fix Editor Whitespace
@@ -321,14 +271,11 @@ public class SemanticInterpreter {
 
 			inv.invokeFunction(function.replaceAll("\\s+", ""), value);
 			return true;
-			// compare(function, source, target);
 		} catch (Exception e) {
 			exceptions.put(function, e);
 			logger.error("Failed executing function " + function + " := " + e.getMessage());
-			// logger.error(e.getMessage(), e);
 			return false;
 		}
-		// }
 	}
 
 	Boolean execute(String function, Object target, Properties properties) {
@@ -341,7 +288,6 @@ public class SemanticInterpreter {
 			logger.error(e.getMessage(), e);
 			return false;
 		}
-		// }
 	}
 
 }

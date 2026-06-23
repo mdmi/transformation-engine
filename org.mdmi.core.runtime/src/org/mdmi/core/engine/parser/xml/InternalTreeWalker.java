@@ -51,9 +51,6 @@ public class InternalTreeWalker {
 	 */
 	final private SerializationHandler m_Serializer;
 
-	// ARGHH!! JAXP Uses Xerces without setting the namespace processing to ON!
-	// DOM2Helper m_dh = new DOM2Helper();
-
 	/** DomHelper for this TreeWalker */
 	final protected DOM2Helper m_dh;
 
@@ -81,7 +78,6 @@ public class InternalTreeWalker {
 	 *            contentHandler operation (toXMLString, digest, ...)
 	 */
 	public InternalTreeWalker(ContentHandler contentHandler, String systemId) {
-		// Set the content handler
 		m_contentHandler = contentHandler;
 		if (m_contentHandler instanceof SerializationHandler) {
 			m_Serializer = (SerializationHandler) m_contentHandler;
@@ -89,24 +85,20 @@ public class InternalTreeWalker {
 			m_Serializer = null;
 		}
 
-		// Set the system ID, if it is given
 		m_contentHandler.setDocumentLocator(m_locator);
 		if (systemId != null) {
 			m_locator.setSystemId(systemId);
 		} else {
 			try {
-				// Bug see Bugzilla 26741
 				m_locator.setSystemId(System.getProperty("user.dir") + File.separator + "dummy.xsl");
 			} catch (SecurityException se) {// user.dir not accessible from applet
 			}
 		}
 
-		// Set the document locator
 		if (m_contentHandler != null) {
 			m_contentHandler.setDocumentLocator(m_locator);
 		}
 		try {
-			// Bug see Bugzilla 26741
 			m_locator.setSystemId(System.getProperty("user.dir") + File.separator + "dummy.xsl");
 		} catch (SecurityException se) {// user.dir not accessible from applet
 
@@ -242,7 +234,6 @@ public class InternalTreeWalker {
 	 */
 	protected void startNode(Node node) throws org.xml.sax.SAXException {
 
-		// Update locator info if node provides it
 		if (node instanceof Locator) {
 			Locator loc = (Locator) node;
 			m_locator.setColumnNumber(loc.getColumnNumber());
@@ -269,13 +260,11 @@ public class InternalTreeWalker {
 
 			case Node.DOCUMENT_FRAGMENT_NODE:
 			case Node.DOCUMENT_NODE:
-				// No special handling required
 				break;
 
 			case Node.ELEMENT_NODE: {
 				Element element = (Element) node;
 
-				// Declare element namespace to ContentHandler
 				String uri = element.getNamespaceURI();
 				String prefix = element.getPrefix() != null
 						? element.getPrefix()
@@ -284,7 +273,6 @@ public class InternalTreeWalker {
 					m_contentHandler.startPrefixMapping(prefix, uri);
 				}
 
-				// Declare namespaces for attributes
 				NamedNodeMap attributes = element.getAttributes();
 				for (int i = 0; i < attributes.getLength(); i++) {
 					Node attr = attributes.item(i);
@@ -354,12 +342,10 @@ public class InternalTreeWalker {
 				if (lexicalHandler != null) {
 					lexicalHandler.startEntity(entityRef.getNodeName());
 				}
-				// Otherwise, pure SAX ContentHandler cannot output entities
 				break;
 			}
 
 			default:
-				// No action for other node types
 		}
 	}
 
@@ -386,15 +372,10 @@ public class InternalTreeWalker {
 				this.m_contentHandler.endElement(ns, m_dh.getLocalNameOfNode(node), node.getNodeName());
 
 				if (m_Serializer == null) {
-					// Don't bother with endPrefixMapping calls if the ContentHandler is a
-					// SerializationHandler because SerializationHandler's ignore the
-					// endPrefixMapping() calls anyways. . . . This is an optimization.
 					Element elem_node = (Element) node;
 					NamedNodeMap atts = elem_node.getAttributes();
 					int nAttrs = atts.getLength();
 
-					// do the endPrefixMapping calls in reverse order
-					// of the startPrefixMapping calls
 					for (int i = (nAttrs - 1); 0 <= i; i--) {
 						final Node attr = atts.item(i);
 						final String attrName = attr.getNodeName();
@@ -402,9 +383,6 @@ public class InternalTreeWalker {
 						final String prefix;
 
 						if (attrName.equals("xmlns") || attrName.startsWith("xmlns:")) {
-							// Use "" instead of null, as Xerces likes "" for the
-							// name of the default namespace. Fix attributed
-							// to "Steven Murray" <smurray@ebt.com>.
 							if (colon < 0) {
 								prefix = "";
 							} else {

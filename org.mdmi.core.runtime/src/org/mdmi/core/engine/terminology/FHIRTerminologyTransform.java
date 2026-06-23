@@ -64,8 +64,6 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 
 	public static CodeHashMap codeValues = new CodeHashMap();
 
-	// public static String DEFALUTURL = "http://ec2-18-188-214-103.us-east-2.compute.amazonaws.com:8080/fhir";
-
 	private static String fhirTerminologyURL = null;
 
 	private static Logger logger = LoggerFactory.getLogger(FHIRTerminologyTransform.class);
@@ -280,18 +278,14 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 		Timeout connectionTimeout = Timeout.ofSeconds(2); // Time to establish connection
 		Timeout responseTimeout = Timeout.ofSeconds(4); // Time waiting for response
 
-		// Configure request timeouts
 		RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(connectionTimeout).setResponseTimeout(
 			responseTimeout).build();
 
-		// Create HttpClient with default request config
 		try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build()) {
 
-			// Prepare GET request
 			HttpGet request = new HttpGet(fhirTerminologyURL + "/metadata");
 			request.setHeader("Accept", "application/fhir+json");
 
-			// Execute the request
 			try (CloseableHttpResponse response = httpClient.execute(request)) {
 				HttpEntity entity = response.getEntity();
 				if (entity != null) {
@@ -303,7 +297,6 @@ public class FHIRTerminologyTransform implements ITerminologyTransform {
 		}
 
 		processTerminology = false;
-		// TODO Auto-generated method stub
 		return false;
 	}
 

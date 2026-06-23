@@ -317,7 +317,6 @@ public final class FileUtil {
 					if (s.length() <= 0 || '"' != s.charAt(0)) {
 						break;
 					}
-					// we have a double double quote "test ""name"" test"
 					item.append('"');
 					s.deleteCharAt(0);
 				} else {

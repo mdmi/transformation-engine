@@ -189,8 +189,6 @@ public class JsonSyntacticParser implements ISyntacticParser {
 			return true;
 		}
 
-		// Node matchingSyntaxNode = null;
-
 		Stack<Boolean> shouldPop = new Stack<>();
 
 		private Node getSyntaxNode(String key) {
@@ -295,7 +293,6 @@ public class JsonSyntacticParser implements ISyntacticParser {
 
 			MessageSyntaxModel syn = mdl.getSyntaxModel();
 			Node node = syn.getRoot();
-			// yroot = new YBag((Bag) node, null);
 			long l = System.currentTimeMillis();
 			yroot = jsonParse(node, data);
 			logger.trace(
@@ -326,8 +323,6 @@ public class JsonSyntacticParser implements ISyntacticParser {
 			}
 		} catch (ParseException pe) {
 			logger.error(pe.getMessage());
-			// pe.getMessage()
-			// p
 		}
 
 		return jsonHandler.yroot;
@@ -398,7 +393,6 @@ public class JsonSyntacticParser implements ISyntacticParser {
 		public Visitor(JSONAware element) {
 			super();
 			elements.push(element);
-			// path.push("");
 		}
 
 		Stack<JSONAware> elements = new Stack<>();
@@ -429,7 +423,6 @@ public class JsonSyntacticParser implements ISyntacticParser {
 					if (childElement == null && ynode.getNode() instanceof Bag) {
 
 						JSONObject foo = new JSONObject();
-						// bagnodes.put(ynode.getNode().getName(), foo);
 						((JSONObject) elements.peek()).put(ynode.getNode().getLocation(), foo);
 						elements.push(foo);
 

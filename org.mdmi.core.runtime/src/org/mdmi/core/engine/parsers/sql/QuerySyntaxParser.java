@@ -156,7 +156,6 @@ public class QuerySyntaxParser implements ISyntacticParser {
 		return BASE;
 	}
 
-	// [http[s]://]domain/path?name=value&...
 	public static Query parseQueryString(String q) {
 		if (StringUtil.isNullOrEmpty(q)) {
 			return null;

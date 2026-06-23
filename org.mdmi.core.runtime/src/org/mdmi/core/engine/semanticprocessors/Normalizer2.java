@@ -43,18 +43,6 @@ public class Normalizer2 extends ConfigurableSemanticProcessor {
 				rootElement.addChild(element);
 				element.setParent(rootElement);
 
-				// String refValue = extractReferenceValue(semanticElement);
-				// SemanticElement parent = se.getRelationshipByName("NORMALIZE").getRelatedSemanticElement();
-				//
-				// for (IElementValue parentValue : elementSet.getElementValuesByName(parent)) {
-				// String idValue = extractIdValue(parent, parentValue);
-				//
-				// if (refValue.equals(idValue) && parentValue.getChildren() != null) {
-				// for (IElementValue child : parentValue.getChildren()) {
-				// semanticElement.addChild(child);
-				// }
-				// }
-				// }
 			}
 		}
 

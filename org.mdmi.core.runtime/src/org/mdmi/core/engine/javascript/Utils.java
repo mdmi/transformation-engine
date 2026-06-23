@@ -286,7 +286,6 @@ public class Utils {
 			 */
 			if (fromDate == null && (date.endsWith("-"))) {
 
-				// date = date.replace("--", "-");
 				date = StringUtils.stripEnd(date, "-");
 				for (RuntimeDateFormat fromFormat : FORMATS.get(fromKey)) {
 					try {
@@ -327,8 +326,6 @@ public class Utils {
 						}
 					}
 				}
-				// try best fit here
-				// String key
 				for (RuntimeDateFormat toFormat : FORMATS.get(toKey)) {
 					if (toFormat.preferred && toFormat.pattern.equals(toKey.replace("yyyy", "uuuu"))) {
 						try {
@@ -343,7 +340,6 @@ public class Utils {
 				}
 
 				for (RuntimeDateFormat toFormat : FORMATS.get(toKey)) {
-					// if (toFormat.preferred && toFormat.pattern.equals(toKey.replace("yyyy", "uuuu"))) {
 					try {
 						return toFormat.output.format(fromDate);
 					} catch (UnsupportedTemporalTypeException unsupportedTemporalTypeException) {
@@ -351,7 +347,6 @@ public class Utils {
 						logger.error(unsupportedTemporalTypeException.getLocalizedMessage());
 						return date;
 					}
-					// }
 
 				}
 			}
@@ -380,62 +375,6 @@ public class Utils {
 	 * @param object
 	 */
 	public static void StringToAddress(String sourceAddress, Object object) {
-
-		// XDataStruct xds = (XDataStruct) object;
-		//
-		// if (!StringUtils.isEmpty(sourceAddress)) {
-		//
-		// Map<net.sourceforge.jgeocoder.AddressComponent, String> addressComponents = net.sourceforge.jgeocoder.us.AddressParser.parseAddress(
-		// sourceAddress);
-		//
-		// if (addressComponents != null) {
-		//
-		// StringBuffer streetAddresLine = new StringBuffer();
-		//
-		// String number = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.NUMBER);
-		//
-		// if (!StringUtils.isEmpty(number)) {
-		// streetAddresLine.append(number).append(" ");
-		// }
-		//
-		// String street1 = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.STREET);
-		//
-		// if (!StringUtils.isEmpty(street1)) {
-		// streetAddresLine.append(street1);
-		// }
-		//
-		// if (streetAddresLine.length() > 0) {
-		// xds.getXValue("streetAddressLine").addValue(streetAddresLine.toString());
-		// }
-		// String street2 = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.STREET2);
-		//
-		// if (!StringUtils.isEmpty(street2)) {
-		// xds.getXValue("streetAddressLine").addValue(street2);
-		// }
-		//
-		// String city = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.CITY);
-		//
-		// if (!StringUtils.isEmpty(city)) {
-		// xds.getXValue("city").setValue(city);
-		// }
-		//
-		// String state = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.STATE);
-		//
-		// if (!StringUtils.isEmpty(state)) {
-		// xds.getXValue("state").setValue(state);
-		// }
-		//
-		// String zip = addressComponents.get(net.sourceforge.jgeocoder.AddressComponent.ZIP);
-		//
-		// if (!StringUtils.isEmpty(zip)) {
-		// xds.getXValue("postalCode").setValue(zip);
-		// }
-		// } else {
-		// // issue parsing just set the street address line
-		// xds.getXValue("streetAddressLine").addValue(sourceAddress);
-		//
-		// }
-		// }
 
 	}
 

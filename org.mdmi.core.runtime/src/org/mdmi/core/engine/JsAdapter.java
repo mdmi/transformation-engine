@@ -31,10 +31,6 @@ public class JsAdapter implements IExpressionInterpreter {
 
 	private XValue m_value;
 
-	// final static ScriptEngineManager factory = new ScriptEngineManager();
-
-	// final static engine = factory.getEngineByName("JavaScript");
-
 	ThreadLocal<ScriptEngine> engine = new ThreadLocal<>();
 
 	final static String PACKAGES = " importPackage(Packages.org.mdmi.core);" + System.getProperty("line.separator") +
@@ -102,21 +98,6 @@ public class JsAdapter implements IExpressionInterpreter {
 	}
 
 	private boolean eval(IElementValue context, String rule, ArrayList<Exception> lex, Properties properties) {
-		// rule = addPackages(rule);
-		// boolean returnValue = false;
-		// try {
-		// engine.put("value", context);
-		// engine.put("properties", properties);
-		// if (null != m_name && 0 < m_name.length()) {
-		// engine.put(m_name, m_value);
-		// }
-		// engine.put("returnValue", returnValue);
-		// engine.eval(rule);
-		// } catch (Exception ex) {
-		// logger.error("Error executing rule ", ex);
-		// lex.add(ex);
-		// }
-		// return returnValue;
 		return true;
 	}
 

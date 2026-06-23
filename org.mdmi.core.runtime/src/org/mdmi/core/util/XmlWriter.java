@@ -524,16 +524,9 @@ public final class XmlWriter {
 					}
 					break;
 				case '\r':
-					// If CR is part of the document's content, it must not be printed as a literal
-					// otherwise it would be normalized to LF when the document is reparsed.
 					b.append("&#xD;");
 					break;
 				default: {
-					// In XML 1.1, control chars in the ranges [#x1-#x1F, #x7F-#x9F] must be escaped.
-					// Escape space characters that would be normalized to #x20 in attribute values
-					// when the document is reparsed.
-					// Escape NEL (0x85) and LSEP (0x2028) that appear in content
-					// if the document is XML 1.1, since they would be normalized to LF when reparsing.
 					if (m_XML11 && ((c >= 0x01 && c <= 0x1F && c != 0x09 && c != 0x0A) || (c >= 0x7F && c <= 0x9F) ||
 							c == 0x2028) || isAttribute && (c == 0x09 || c == 0x0A)) {
 						b.append("&#x");
@@ -581,12 +574,10 @@ public final class XmlWriter {
 		Method getXMLVersion = null;
 		try {
 			getXMLVersion = document.getClass().getMethod("getXmlVersion", new Class[] {});
-			// If Document class implements DOM L3, this method will exist.
 			if (getXMLVersion != null) {
 				version = (String) getXMLVersion.invoke(document, (Object[]) null);
 			}
 		} catch (Exception ignored) {
-			// Either this locator doesn't have the method, or old JDK.
 		}
 		return version;
 	}

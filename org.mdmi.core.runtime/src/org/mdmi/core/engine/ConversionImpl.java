@@ -63,8 +63,6 @@ class ConversionImpl {
 
 	boolean first = true;
 
-	// ObjectNode conversionNode;
-
 	HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget;
 
 	HashMap<IElementValue, IElementValue> targettosource;
@@ -81,7 +79,6 @@ class ConversionImpl {
 		this.sourcetotarget = sourcetotarget;
 		this.targettosource = targettosource;
 		this.trgSemanticModel = trgSemanticModel;
-		// TODO Auto-generated constructor stub
 	}
 
 	private static String parseFunctionName(String rule) {
@@ -195,7 +192,6 @@ class ConversionImpl {
 			} else {
 				datamapInterpreters.put(targetKey, new DatamapInterpreter(target));
 			}
-			// datamapInterpreters.put(targetKey, new DatamapInterpreter(target));
 		}
 
 		sourceDatamapInterpreter = datamapInterpreters.get(sourceKey);
@@ -220,10 +216,8 @@ class ConversionImpl {
 
 			if (sourceDatamapInterpreter == null) {
 				throw new RuntimeException("execMapToMDMI datamapInterpreter is null");
-				// datamapInterpreter = new DatamapInterpreter(toBE.getOwner().getElementSet().getModel().getGroup());
 			}
 
-			// If getValue == null - we have a primitive pass int the XValue to method
 			boolean executed = true;
 			if (v.getValue() == null) {
 				executed = sourceDatamapInterpreter.execute(
@@ -244,7 +238,6 @@ class ConversionImpl {
 			logger.trace("Missing transformation Source Rule " + toBE.getRule());
 		}
 
-		// If we have a terminology conversion
 		if (v != null && hasTerminologyTransformation(toBE, toBE.getBusinessElement())) {
 
 			if (v.getValue() != null && v.getValue() instanceof XDataStruct) {
@@ -333,8 +326,6 @@ class ConversionImpl {
 								}
 								xds.replaceValue("displayName", transformCode.displayName);
 							}
-							// xds.replaceValue("system", transformCode.system);
-							// xds.replaceValue("display", transformCode.displayName);
 						}
 					}
 				}
@@ -349,7 +340,6 @@ class ConversionImpl {
 
 			if (targetDatamapInterpreter == null) {
 				throw new RuntimeException("execMapFromMDMI datamapInterpreter is null");
-				// datamapInterpreter = new DatamapInterpreter(toSE.getOwner().getElementSet().getModel().getGroup());
 			}
 
 			if (trg.getXValue().getValues().size() == 0) {
@@ -415,7 +405,6 @@ class ConversionImpl {
 							sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
 
 				} else {
-					// refereneces.put(target, (XElementValue) sourceSemanticElement.getParent());
 				}
 
 			} else {
@@ -456,7 +445,6 @@ class ConversionImpl {
 
 	private void cloneStruct(XDataStruct src, XDataStruct trg, boolean fromSrc) {
 		if (src == null || trg == null) {
-			// throw new IllegalArgumentException("Null argument!");
 			return;
 		}
 		Collection<XValue> values = trg.getXValues();

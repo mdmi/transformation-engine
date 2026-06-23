@@ -34,7 +34,6 @@ public final class MdmiPostProcessors {
 	public void addPostProcessor(IPostProcessor postProcessor) {
 		if (postProcessor != null) {
 			boolean add = true;
-			// fail safe to make sure post process is onyl added once
 			for (IPostProcessor registered : postProcessors) {
 				if (registered.getName().equals(postProcessor.getName())) {
 					add = false;

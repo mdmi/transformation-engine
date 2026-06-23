@@ -166,20 +166,6 @@ public class XDataChoice extends XData {
 		m_value = null;
 	}
 
-	// @Override
-	// protected String toString(String indent) {
-	// XValue v = m_value;
-	// StringBuffer sb = new StringBuffer();
-	// if (v != null) {
-	// sb.append(v.toString(indent));
-	// } else {
-	// sb.append("NULL");
-	// }
-	//
-	// sb.append("\r\n");
-	// return sb.toString();
-	// }
-
 	@Override
 	public boolean isEmpty() {
 		return m_value == null || m_value.isEmpty();

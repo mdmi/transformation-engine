@@ -121,7 +121,6 @@ public class DatamapInterpreter {
 						Paths.get("./logs/" + messageGropu.getName() + "datatypemaps.js"), sb.toString().getBytes());
 				} catch (IOException e) {
 					logger.trace("Unable to log datatypes");
-					// e.printStackTrace();
 				}
 			}
 			engine.eval(compile(sb.toString()));
@@ -163,7 +162,6 @@ public class DatamapInterpreter {
 		Compiler compiler = new Compiler();
 
 		CompilerOptions options = new CompilerOptions();
-		// Advanced mode is used here, but additional options could be set, too.
 		CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
 
 		SourceFile sf;
@@ -180,7 +178,6 @@ public class DatamapInterpreter {
 	public boolean execute(String function, Object source, Object target, Properties properties,
 			ConversionRule conversionRule) {
 
-		// synchronized (inv) {
 		try {
 			/*
 			 * @TODO Fix Editor Whitespace
@@ -190,19 +187,15 @@ public class DatamapInterpreter {
 			inv.invokeFunction(function.replaceAll("\\s+", ""), source, target, properties, conversionRule);
 
 			return true;
-			// compare(function, source, target);
 		} catch (Exception e) {
 			exceptions.put(function, e);
 			logger.error("Failed executing function " + function + " := " + e.getMessage());
-			// logger.error(e.getMessage(), e);
 			return false;
 		}
-		// }
 	}
 
 	Boolean execute(String function, Object target, Properties properties) {
 
-		// synchronized (inv) {
 		try {
 			logger.trace("Executing Method " + function);
 			return (Boolean) inv.invokeFunction(function.replaceAll("\\s+", ""), target, properties);
@@ -212,7 +205,6 @@ public class DatamapInterpreter {
 			logger.error(e.getMessage(), e);
 			return false;
 		}
-		// }
 	}
 
 }

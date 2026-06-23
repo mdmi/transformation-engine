@@ -46,49 +46,28 @@ public class XmlUtil {
 
 	private static final SimpleDateFormat HMSZ = new SimpleDateFormat("HH:mm:ssZ");
 
-	// patterns for the XML Schema builtin types
-
-	// duration
-	// (-)P1Y2M3DT10H30M40.50S 1 year, 2 months 3 days, 10 hours, 30 minutes and 40.50 seconds
-	// 5.5.3.2 of ISO 8601, http://www.iso.ch/markete/8601.pdf
 	public static final Pattern P_DURATION = Pattern.compile(
 		"-?P([0-9]+Y)?([0-9]+M)?([0-9]+D)?(T([0-9]+H)?([0-9]+M)?([0-9]+(.[0-9]+)?S)?)?");
 
-	// dateTime
-	// (-)CCYY-MM-DDThh:mm:ss.sss(Z|+/-hh:mm)
 	public static final Pattern P_DATETIME = Pattern.compile(
 		"-?([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(.[0-9]*)?(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// time
-	// hh:mm:ss.sss(Z|+/-hh:mm)
 	public static final Pattern P_TIME = Pattern.compile(
 		"([0-9]{2}):([0-9]{2}):([0-9]{2})(.[0-9]*)?(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// date
-	// (-)CCYY-MM-DD(Z|+/-hh:mm)
 	public static final Pattern P_DATE = Pattern.compile(
 		"-?([0-9]{4})-([0-9]{2})-([0-9]{2})(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// gYearMonth
-	// (-)CCYY-MM(Z|+/-hh:mm)
 	public static final Pattern P_GYEARMONTH = Pattern.compile(
 		"-?([0-9]{4})-([0-9]{2})(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// gYear
-	// (-)CCYY(Z|+/-hh:mm)
 	public static final Pattern P_GYEAR = Pattern.compile("-?([0-9]{4})(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// gMonthDay
-	// --MM-DD(Z|+/-hh:mm)
 	public static final Pattern P_GMONTHDAY = Pattern.compile(
 		"--([0-9]{2})-([0-9]{2})(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// gDay
-	// ---DD(Z|+/-hh:mm)
 	public static final Pattern P_GDAY = Pattern.compile("---([0-9]{2})(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
-	// G__M_
-	// --MM--(Z|+/-hh:mm)
 	public static final Pattern P_GMONTH = Pattern.compile("--([0-9]{2})--(Z|(\\+|-)([0-9]{2}):([0-9]{2}))?");
 
 	/**
@@ -741,9 +720,6 @@ public class XmlUtil {
 			}
 		}
 		Document doc = e.getOwnerDocument();
-		// bit of a hack - we preserve the cdata on the way in so we can serialize correctly
-		// This only works on xml to xml
-		// TODO need to have a "preserve format" or some such on the mdmi structure
 		if (text.startsWith("<![CDATA[") && text.endsWith("]]>")) {
 			CDATASection cdata = doc.createCDATASection(
 				text != null
@@ -752,32 +728,26 @@ public class XmlUtil {
 			e.appendChild(cdata);
 		} else {
 
-			// Add the result of the style sheet to the document as raw html
 			DocumentBuilder documentBuilder;
 			try {
 
 				DocumentBuilderFactory df = DocumentBuilderFactory.newInstance();
-				// df.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-				// df.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 				documentBuilder = df.newDocumentBuilder();
 
 				ErrorHandler mine = new ErrorHandler() {
 
 					@Override
 					public void error(SAXParseException arg0) throws SAXException {
-						// TODO Auto-generated method stub
 
 					}
 
 					@Override
 					public void fatalError(SAXParseException arg0) throws SAXException {
-						// TODO Auto-generated method stub
 
 					}
 
 					@Override
 					public void warning(SAXParseException arg0) throws SAXException {
-						// TODO Auto-generated method stub
 
 					}
 				};
@@ -794,10 +764,6 @@ public class XmlUtil {
 				e.appendChild(txt);
 			}
 
-			// Text txt = doc.createTextNode(text != null
-			// ? text.trim()
-			// : null);
-			// e.appendChild(txt);
 		}
 
 	}

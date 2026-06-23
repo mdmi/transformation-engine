@@ -158,8 +158,6 @@ public class MdmiUow implements Runnable {
 			preProcess();
 			watch.split();
 			logger.info("Split preProcess: " + watch.toSplitString());
-			// watch.split();
-			// logger.trace("Split Time Elapsed in MILLISECONDS: " + watch.getSplitNanoTime());
 			logger.info("Execute processInboundSourceMessage " + Thread.currentThread().getName());
 			processInboundSourceMessage();
 			watch.split();
@@ -253,7 +251,6 @@ public class MdmiUow implements Runnable {
 
 			} catch (IOException e) {
 				logger.trace("Unable to log srcSyntaxModel");
-				// e.printStackTrace();
 			}
 		}
 
@@ -267,11 +264,6 @@ public class MdmiUow implements Runnable {
 
 		watch.split();
 		logger.info("buildSemanticModel : " + watch.toSplitString());
-
-		// if (logger.isTraceEnabled()) {
-		// logElementSet(srcSemanticModel);
-		// }
-		// logger.debug("Source Semantic Model : \n" + srcSemanticModel.toString());
 
 	}
 
@@ -298,7 +290,6 @@ public class MdmiUow implements Runnable {
 		if ("Value918".equals(xElementValue.getName())) {
 			logger.trace("xElementValue.getName()");
 		}
-		// xElementValue.get
 
 		if (xElementValue.getSemanticElement() != null && xElementValue.getSemanticElement().getSyntaxNode() != null) {
 			logger.trace("LOCATION " + xElementValue.getSemanticElement().getSyntaxNode().getLocation());
@@ -685,68 +676,6 @@ public class MdmiUow implements Runnable {
 							}
 						}
 
-						// if (targetSementicReferences.contains(targetSementicElement.getName())) {
-						// boolean checkReferenceContainment = false;
-						// if (tmo.getRule() != null && tmo.getRule().startsWith("REFERENCE:")) {
-						//
-						// String[] referenceParameters = tmo.getRule().split(":");
-						// String containmentParameter = referenceParameters[1];
-						// IElementValue element = sourceElementValue.getParent();
-						// while (element != null && !checkReferenceContainment) {
-						// for (ConversionRule zzz : element.getSemanticElement().getMapToMdmi()) {
-						// if (containmentParameter.equals(zzz.getBusinessElement().getName())) {
-						// checkReferenceContainment = true;
-						// }
-						// }
-						// element = element.getParent();
-						// }
-						//
-						// if (!checkReferenceContainment) {
-						//
-						// final List<String> found = new ArrayList<String>();
-						//
-						// Consumer<? super IElementValue> go = new Consumer<IElementValue>() {
-						//
-						// @Override
-						// public void accept(IElementValue t) {
-						//
-						// if (t.getSemanticElement() != null) {
-						// for (ConversionRule zzz : t.getSemanticElement().getMapToMdmi()) {
-						//
-						// if (containmentParameter.equals(
-						// zzz.getBusinessElement().getName())) {
-						// found.add("found");
-						// }
-						// }
-						// }
-						//
-						// // TODO Auto-generated method stub
-						//
-						// }
-						//
-						// };
-						// whattotransfer.forEach(go);
-						// if (!found.isEmpty()) {
-						// checkReferenceContainment = true;
-						// }
-						//
-						// //
-						// // for (whattotransfer.) {
-						// //
-						// // }
-						// // // sourceElementValue.
-						// // // if (targetSementicElement.getParent() != null) {
-						// // // // if (srcSemanticModel.) {
-						// // // //
-						// // // // }
-						// // // }
-						//
-						// }
-						// }
-						//
-						// wholeStackMapped = false; // checkReferenceContainment;
-						// }
-
 						if (wholeStackMapped) {
 
 							logger.trace(
@@ -806,61 +735,6 @@ public class MdmiUow implements Runnable {
 			}
 
 		}
-
-		// for (String r : targetSementicReferences) {
-		//
-		// }
-
-		// ArrayList<Reference> referencesToCreate = new ArrayList<>();
-		// for (IElementValue x : trgSemanticModel.getAllElementValues()) {
-		//
-		// for (SemanticElement c : x.getSemanticElement().getChildren()) {
-		//
-		// for (ConversionRule toMessage : c.getMapFromMdmi()) {
-		// if (toMessage.getRule() != null && toMessage.getRule().startsWith("REFERENCE:")) {
-		//
-		// String[] referenceParameters = toMessage.getRule().split(":");
-		//
-		// for (IElementValue again : trgSemanticModel.getAllElementValues()) {
-		// for (SemanticElement againc : again.getSemanticElement().getChildren()) {
-		//
-		// for (ConversionRule toMessageAgain : againc.getMapFromMdmi()) {
-		//
-		// if (toMessageAgain.getBusinessElement() != null && referenceParameters[1].equals(
-		// toMessageAgain.getBusinessElement().getName())) {
-		//
-		// for (ConversionRule xxx : c.getMapFromMdmi()) {
-		// if (xxx.getBusinessElement() != null) {
-		//
-		// for (IElementValue sourceElement : srcSemanticModel.getAllElementValues()) {
-		// for (ConversionRule toMdmi2 : sourceElement.getSemanticElement().getMapToMdmi()) {
-		// if (toMdmi2.getBusinessElement().getUniqueIdentifier().equals(
-		// xxx.getBusinessElement().getUniqueIdentifier())) {
-		//
-		// Reference ref = new Reference(x, sourceElement, c);
-		// referencesToCreate.add(ref);
-		//
-		// }
-		// }
-		//
-		// }
-		// }
-		//
-		// }
-		//
-		// }
-		//
-		// }
-		//
-		// }
-		// }
-		//
-		// }
-		//
-		// }
-		// }
-		//
-		// }
 
 		List<IElementValue> trgValues = trgSemanticModel.getAllElementValues();
 		List<IElementValue> srcValues = srcSemanticModel.getAllElementValues();
@@ -931,7 +805,6 @@ public class MdmiUow implements Runnable {
 			} catch (Exception e) {
 				logger.error("ERROR IN CONVERSION", e);
 			}
-			// }
 		}
 
 		watch.split();
@@ -1181,20 +1054,6 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		// for (
-		//
-		// String key : impl.sourceDatamapInterpreter.exceptions.keySet()) {
-		// logger.error(key);
-		// logger.error(impl.sourceDatamapInterpreter.exceptions.get(key).getMessage());
-		// }
-		//
-		// for (
-		//
-		// String key : impl.targetDatamapInterpreter.exceptions.keySet()) {
-		// logger.error(key);
-		// logger.error(impl.targetDatamapInterpreter.exceptions.get(key).getMessage());
-		// }
-
 		watch.split();
 		logger.trace("Done : " + watch.toSplitString());
 
@@ -1254,7 +1113,6 @@ public class MdmiUow implements Runnable {
 	void processOutboundTargetMessage() {
 		ISemanticParser trgSemProv = getSemanticProvider(transferInfo.getTargetMessageGroup());
 		ISyntacticParser trgSynProv = getSyntaxProvider(transferInfo.getTargetMessageGroup());
-		// long ts = System.currentTimeMillis();
 
 		StopWatch watch = new StopWatch();
 		watch.start();
@@ -1327,7 +1185,6 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.info("Split processOutboundTargetMessage serialize : " + watch.toSplitString());
 
-		//
 	}
 
 	private boolean isBreadCrumb(SemanticElement semanticElement) {
@@ -1366,9 +1223,6 @@ public class MdmiUow implements Runnable {
 			return resolver().getSyntacticParser(
 				messageGroup.getName(), messageGroup.getModels().get(0).getMessageModelName());
 		}
-		// for (MessageModel s : messageGroup.getModels()) {
-		// return resolver().getSyntacticParser(messageGroup.getName(), s.getMessageModelName());
-		// }
 		return null;
 
 	}
@@ -1413,7 +1267,6 @@ public class MdmiUow implements Runnable {
 	}
 
 	void collectFields(MDMIDatatype mdmiDatatype, String path, ArrayList<FieldAndPath> fields) {
-		// logger.trace(path);
 
 		if (mdmiDatatype == null || mdmiDatatype.getFields() == null || (path != null && path.endsWith("extension"))) {
 			return;
@@ -1588,11 +1441,6 @@ public class MdmiUow implements Runnable {
 
 		this.srcSyntaxModel = null;
 		this.trgSyntaxModel = null;
-		//
-		// this.srcSemanticModel.clearCach();
-		// this.trgSemanticModel.clearCach();
-		// this.trgSemanticModel = null;
-		// this.srcSemanticModel = null;
 
 	}
 

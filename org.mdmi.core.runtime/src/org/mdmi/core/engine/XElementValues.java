@@ -72,21 +72,6 @@ final class XElementValues {
 		}
 	}
 
-	// @Override
-	// public String toString() {
-	// return toString("");
-	// }
-	//
-	// public String toString(String indent) {
-	// StringBuffer sb = new StringBuffer(256);
-	// sb.append("ElementValues: [\n");
-	// for (XES xes : elementValues) {
-	// sb.append(indent + " ").append(xes.toString(indent + " ")).append("\n");
-	// }
-	// sb.append(indent).append("]}");
-	// return sb.toString();
-	// }
-
 	static class XE {
 		public XElementValue elementValue;
 
@@ -105,26 +90,6 @@ final class XElementValues {
 			return null;
 		}
 
-		// @Override
-		// public String toString() {
-		// return toString("");
-		// }
-		//
-		// public String toString(String indent) {
-		// StringBuffer sb = new StringBuffer(256);
-		// sb.append("{XE: '").append(elementValue.getName()).append("'");
-		// if (children.size() <= 0) {
-		// sb.append(", value: ").append(elementValue.getXValue().toString(indent + " "));
-		// sb.append("}");
-		// return sb.toString();
-		// }
-		// sb.append(", children: [\n");
-		// for (XES xes : children) {
-		// sb.append(xes.toString(indent + " ")).append("\n");
-		// }
-		// sb.append("]}");
-		// return sb.toString();
-		// }
 	}
 
 	static class XES {
@@ -136,24 +101,5 @@ final class XElementValues {
 			this.semanticElement = semanticElement;
 		}
 
-		// @Override
-		// public String toString() {
-		// return toString("");
-		// }
-		//
-		// public String toString(String indent) {
-		// StringBuffer sb = new StringBuffer(256);
-		// sb.append("{XES: '").append(semanticElement.getName()).append("'");
-		// if (elementValues.size() <= 0) {
-		// sb.append("}");
-		// return sb.toString();
-		// }
-		// sb.append(", elementValues: [\n");
-		// for (XE xe : elementValues) {
-		// sb.append(indent + " ").append(xe.toString(indent + " ")).append("\n");
-		// }
-		// sb.append(indent).append("]}");
-		// return sb.toString();
-		// }
 	}
 } // XElementValues

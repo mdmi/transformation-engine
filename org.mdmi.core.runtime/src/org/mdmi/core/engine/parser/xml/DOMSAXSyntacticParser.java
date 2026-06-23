@@ -117,7 +117,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		@Override
 		public void exitAbbreviatedStep(AbbreviatedStepContext ctx) {
-			// If xpath has .. move node upto parent
 			if (DOTDOT.equals(ctx.getText())) {
 				node = node.getParentNode();
 			}
@@ -128,7 +127,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 		public void exitNodeTest(NodeTestContext ctx) {
 			if (!inPredicate) {
 				if (isAttribute) {
-					// sb.append(ctx.getText());
 					Attr attribute = document.createAttribute(ctx.getText());
 					((Element) node).setAttributeNode(attribute);
 					node = attribute;
@@ -153,21 +151,18 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		@Override
 		public void enterPredicate(PredicateContext ctx) {
-			// logger.trace("enterPredicate " + ctx.getText());
 			inPredicate = true;
 			super.enterPredicate(ctx);
 		}
 
 		@Override
 		public void exitPredicate(PredicateContext ctx) {
-			// logger.trace("exitPredicate " + ctx.getText());
 			inPredicate = false;
 			super.exitPredicate(ctx);
 		}
 
 		@Override
 		public void exitAxisSpecifier(AxisSpecifierContext ctx) {
-			// logger.trace("exitAxisSpecifier " + ctx.getText());
 			if (!inPredicate && "@".equals(ctx.getText())) {
 				isAttribute = true;
 			}
@@ -210,10 +205,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 	private org.w3c.dom.Node createElement(Element elemement, String xPath, boolean container) {
 
-		// logger.trace("ELEMEMENT IS :" + elemement.getTagName());
-
-		// logger.trace("XPATH IS :" + xPath);
-
 		if (xPath.startsWith("@")) {
 			Attr attribute = elemement.getOwnerDocument().createAttribute(xPath.substring(1));
 			elemement.setAttributeNode(attribute);
@@ -245,31 +236,22 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			}
 		}
 
-		// logger.trace(elemement.getNodeName() + " creating " + xPath + " container " + container);
-
 		CharStream input = CharStreams.fromString(xPath);
 
 		XPathLexer lexer = new XPathLexer(input);
 
-		// logger.trace("Creating CommonTokenStream");
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-		// logger.trace("Creating XPathParser" + tokens);
 		XPathParser parser = new XPathParser(tokens);
 
 		parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
-		// parser.addErrorListener(SL4JBaseErrorListener.INSTANCE);
 
-		// logger.trace("Creating ParseTreeWalker");
 		ParseTreeWalker walker = new ParseTreeWalker();
 
-		// logger.trace("Creating XPathExtractor");
 		XPathExtractor extractor = new XPathExtractor(elemement, container);
-		// logger.trace("walk");
 
 		walker.walk(extractor, parser.main());
 
-		// logger.trace("created " + extractor.node.getLocalName());
 		return extractor.node;
 	}
 
@@ -298,8 +280,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 		}
 
 	}
-
-	// static int expressionCounter = 0;
 
 	HashMap<String, XPathExpression> xPathExpressions = new HashMap<>();
 
@@ -435,9 +415,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 				String nodeXPathLocation = node.getLocation();
 
-				// logger.trace(currentRelativeXPath);
-				// logger.trace(nodeXPathLocation);
-
 				if (currentRelativeXPath.equals(nodeXPathLocation) ||
 						nodeXPathLocation.equals("@" + currentRelativeXPath)) {
 
@@ -458,7 +435,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					return true;
 				}
 
-				// @TODO - Add some global to note call this unless parsing MDMI language map
 				if ("MDMI".equals(node.getLocationExpressionLanguage())) {
 
 					String[] locations = nodeXPathLocation.split(Pattern.quote("|"));
@@ -541,13 +517,11 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				if (xpath == null || xpath.isEmpty())
 					return new Stack<>();
 
-				// Clean up XPath
 				String cleaned = xpath.replaceAll("\\[", "/").replaceAll("\\]", "");
 				cleaned = cleaned.replaceAll("=['\"].*?['\"]", ""); // remove comparison
 
 				String[] parts = cleaned.split("/+");
 
-				// Create Stack
 				Stack<String> stack = new Stack<>();
 				List<String> list = Arrays.stream(parts).map(String::trim).filter(s -> !s.isEmpty()).collect(
 					Collectors.toList()); // returns mutable list
@@ -576,13 +550,11 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					if (matches == null) {
 						matches = new NodePredicate(currentBag, qName);
 					}
-					// logger.trace("Try node " + matches);
 
 					Iterable<Node> matchingNodes = null;
 
 					matchingNodes = Iterables.filter(currentBag.getNodesByLocation(qName), matches);
 
-					// Iterable<Node>
 					Iterator<Node> iterator = matchingNodes.iterator();
 
 					while (iterator.hasNext()) {
@@ -596,8 +568,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						String expression = "";
 						try {
 							String path = node.getLocation();
-
-							// logger.trace("path " + path);
 
 							int start = path.indexOf("[");
 							int end = node.getLocation().lastIndexOf("]");
@@ -656,7 +626,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 											p.setTextContent(directText);
 										}
 
-										// Extract elements from XPath expression
 										Stack<String> expressions = extractElementsFromXPath(expression);
 
 										org.w3c.dom.Node currentSource = domNodes.peek();
@@ -708,7 +677,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 											String nodeName = p.getAttributes().item(attributeCtr).getNodeName();
 											if (expression.contains(theValue) && expression.contains(nodeName)) {
 												skip = false;
-												// check for simple
 												String[] xxx = expression.split("'");
 												if (xxx.length == 2 && theValue.equals(xxx[1])) {
 													foundSimple = true;
@@ -767,7 +735,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						}
 
 					}
-					// logger.trace("pushing bag" + currentBag.getName());
 					matches.pushNode(currentBag);
 
 					/**
@@ -777,7 +744,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						break;
 					}
 
-					// logger.info("results " + results.size());
 				}
 				if (logger.isWarnEnabled() && !results.isEmpty() && results.size() > 1) {
 					for (Node n : results) {
@@ -797,7 +763,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					return null;
 				}
 
-				// If it's the document node
 				if (node.getNodeType() == org.w3c.dom.Node.DOCUMENT_NODE) {
 					return "/";
 				}
@@ -808,7 +773,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					int index = getNodeIndex(node);
 					String nodeName = node.getNodeName();
 
-					// Add position only if there are siblings with the same name
 					if (index > 1) {
 						path.insert(0, "/" + nodeName + "[" + index + "]");
 					} else {
@@ -945,10 +909,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 								}
 							}
 						}
-						// if (path.length > 1 && qName.equals(path[0])) {
-						// isUnspecified = false;
-						// break;
-						// }
 					}
 					if (isUnspecified) {
 						try {
@@ -991,7 +951,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						}
 
 					}
-					// matchingSyntaxNode = matchingSyntaxNodes.get(0);
 					if (isParsing && builder != null) {
 						builder = null;
 					}
@@ -1032,10 +991,8 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 								}
 
 							} else if (n.getLocation().equals(".")) {
-								// YLeaf aLeaf = new YLeaf((LeafSyntaxTranslator) n, y);
 
 								bagEndTagProcessor.currentMixedLeaf = new YLeaf((LeafSyntaxTranslator) n, y);
-								// currentYLeaf = new YLeaf((LeafSyntaxTranslator) n, y);
 								y.addYNode(bagEndTagProcessor.currentMixedLeaf);
 
 								isParsing = true;
@@ -1043,8 +1000,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 								if (builder == null) {
 									builder = new StringBuilder();
 								}
-
-								// endTags.push(textEndProcessor);
 
 							}
 
@@ -1068,8 +1023,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						for (Node choiceNode : aChoice.getNodes()) {
 							if (choiceNode.getLocation() != null && choiceNode.getLocation().contains(choiceType)) {
 								if (choiceNode instanceof Bag) {
-									// YBag y2 = new YBag((Bag) choiceNode, y);
-									// y.addYNode(y2);
 
 									syntaxNodes.pop();
 									syntaxNodes.push(choiceNode);
@@ -1092,11 +1045,8 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 								if (choiceNode instanceof LeafSyntaxTranslator) {
 
-									// syntaxNodes.push(aChoice);
-
 									bagEndTagProcessor.currentMixedLeaf = new YLeaf(
 										(LeafSyntaxTranslator) choiceNode, y);
-									// currentYLeaf = new YLeaf((LeafSyntaxTranslator) n, y);
 									y.addYNode(bagEndTagProcessor.currentMixedLeaf);
 
 									isParsing = true;
@@ -1256,8 +1206,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		DocumentBuilderFactory df = DocumentBuilderFactory.newInstance();
 
-		// df.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-		// df.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 		DocumentBuilder b = df.newDocumentBuilder();
 
 		org.w3c.dom.Document doc;
@@ -1346,7 +1294,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			Document doc = null;
 			Element root = null;
 
-			// if (data == null) {
 			doc = pppp.newDocument();
 
 			logger.trace("create node " + nodeName);
@@ -1364,7 +1311,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			if (!StringUtils.isEmpty(transformComment)) {
 				String[] comments = transformComment.split(System.getProperty("line.separator"));
 				for (String comment : comments) {
-					// org.w3c.dom.Comment comment = ;
 					root.getParentNode().insertBefore(doc.createComment(comment), root);
 				}
 
@@ -1410,38 +1356,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		return "";
 
-		// try {
-		// TransformerFactory tf = TransformerFactory.newInstance();
-		// Transformer trans = tf.newTransformer();
-		// StringWriter sw = new StringWriter();
-		// trans.transform(new DOMSource(document), new StreamResult(sw));
-		// return sw.toString();
-		// } catch (TransformerException e) {
-		// // TODO Auto-generated catch block
-		//
-		// }
-		//
-		// // DOMImplementationRegistry registry;
-		// // try {
-		// // registry = DOMImplementationRegistry.newInstance();
-		// // DOMImplementationLS impl = (DOMImplementationLS) registry.getDOMImplementation("LS");
-		// // LSSerializer writer = impl.createLSSerializer();
-		// //
-		// // LSOutput lsOutput = impl.createLSOutput();
-		// // lsOutput.setEncoding("UTF-8");
-		// // Writer stringWriter = new StringWriter();
-		// // lsOutput.setCharacterStream(stringWriter);
-		// // writer.getDomConfig().setParameter("format-pretty-print", true);
-		// // writer.write(document, lsOutput);
-		// // String str = stringWriter.toString();
-		// // return str;
-		// // } catch (ClassNotFoundException e) {
-		// // } catch (InstantiationException e) {
-		// // } catch (IllegalAccessException e) {
-		// // } catch (ClassCastException e) {
-		// // }
-		// //
-		// return "";
 	}
 
 	/**
@@ -1498,14 +1412,10 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			logger.error(iae.getMessage() + " Invalid Descriptions used for sort");
 		}
 
-		// TODO - This loop maintains the physical order of serialization of the syntax mode
-		// Replace with more effective loop
 		logger.trace("serialize " + element.toString());
-		// for (Node node : bag.getBag().getNodes()) {
 		for (YNode ynode : ynodes) {
 			Node node = ynode.getNode();
 
-			// if (ynode.getNode().equals(node)) {
 			if (ynode.isBag()) {
 				boolean isContainer = false;
 				if (node.getSemanticElement() != null && node.getSemanticElement().getDatatype() != null) {
@@ -1537,7 +1447,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 						serialize((YBag) fgh, childElement);
 					}
 
-					// serialize((YBag) ynode, childElement);
 				} catch (java.lang.ClassCastException cce) {
 
 				}
@@ -1588,8 +1497,6 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 					o.setTextContent(value);
 				}
 			}
-			// }
-			// }
 
 		}
 
@@ -1776,20 +1683,9 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			qname = "xmlns:" + prefix;
 		}
 
-		// older version of Xerces (I confirmed that the bug is gone with Xerces 2.4.0)
-		// have a problem of re-setting the same namespace attribute twice.
-		// work around this bug removing it first.
 		if (element.hasAttributeNS("http://www.w3.org/2000/xmlns/", qname)) {
-			// further workaround for an old Crimson bug where the removeAttribtueNS
-			// method throws NPE when the element doesn't have any attribute.
-			// to be on the safe side, check the existence of attributes before
-			// attempting to remove it.
-			// for details about this bug, see org.apache.crimson.tree.ElementNode2
-			// line 540 or the following message:
-			// https://jaxb.dev.java.net/servlets/ReadMsg?list=users&msgNo=2767
 			element.removeAttributeNS("http://www.w3.org/2000/xmlns/", qname);
 		}
-		// workaround until here
 
 		element.setAttributeNS("http://www.w3.org/2000/xmlns/", qname, uri);
 	}

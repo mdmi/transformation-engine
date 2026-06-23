@@ -103,7 +103,6 @@ public final class XValue implements IValue {
 	private void initialize(String name, MDMIDatatype datatype) {
 		m_name = name;
 		m_datatype = datatype;
-		// m_values = new ArrayList<Object>();
 	}
 
 	public Object getNewByName(String field) {
@@ -174,7 +173,6 @@ public final class XValue implements IValue {
 			XDataChoice t = new XDataChoice(this);
 			m_values.add(t);
 		} else if (m_datatype.isSimple()) {
-			// m_datatype.
 
 		}
 	}
@@ -221,7 +219,6 @@ public final class XValue implements IValue {
 	 * @param referenceDatatype
 	 */
 	public XValue(MDMIBusinessElementReference name, MDMIDatatype referenceDatatype) {
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -363,7 +360,6 @@ public final class XValue implements IValue {
 
 	@Override
 	public void addValue(String field, Object value) {
-		// this is a dangerous shortcut, will set the field in all structs if this is an array
 		if (this.m_values.isEmpty()) {
 			this.intializeStructs();
 		}
@@ -373,13 +369,11 @@ public final class XValue implements IValue {
 
 				xds.setValue(field, value);
 
-				// xds.
 			}
 		}
 	}
 
 	public void addValue(String field, Object value, int index) {
-		// this is a dangerous shortcut, will set the field in all structs if this is an array
 		if (this.m_values.isEmpty()) {
 			this.intializeStructs();
 		}
@@ -389,13 +383,11 @@ public final class XValue implements IValue {
 
 				xds.setValue(field, value, index);
 
-				// xds.
 			}
 		}
 	}
 
 	public void addValueHack(String field) {
-		// this is a dangerous shortcut, will set the field in all structs if this is an array
 		if (this.m_values.isEmpty()) {
 			this.intializeStructs();
 		}
@@ -443,16 +435,10 @@ public final class XValue implements IValue {
 		m_values.remove(index);
 	}
 
-	// @Override
-	// public String toString() {
-	// return toString("");
-	// }
-
 	/**
 	 * @param p
 	 */
 	public void push(String p) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -462,7 +448,6 @@ public final class XValue implements IValue {
 	 */
 	public void addValues(String string, Object value) {
 
-		// this.
 	}
 
 	/**
@@ -485,8 +470,6 @@ public final class XValue implements IValue {
 			xv.setValue(fieldName, v);
 			this.m_values.add(xv);
 		}
-
-		// TODO Auto-generated method stub
 
 	}
 

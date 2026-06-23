@@ -81,7 +81,6 @@ public class MdmiUtil {
 						}
 					}
 
-					// logger.trace("SEER not in filter " + input.getName() + "::" + input.getUniqueIdentifier());
 					return false;
 				}
 				return true;
@@ -97,7 +96,6 @@ public class MdmiUtil {
 				StringBuffer commonlog = new StringBuffer();
 
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnLeft().values()) {
-					// logger.trace("SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier());
 
 					onlyinsourcelog.append(
 						"SEER Elements : Only in source " + mber.getName() + " " + mber.getUniqueIdentifier()).append(
@@ -105,8 +103,6 @@ public class MdmiUtil {
 
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesInCommon().values()) {
-					// logger.trace(
-					// "SEER Elements : Common to both messages " + mber.getName() + " " + mber.getUniqueIdentifier());
 
 					commonlog.append(
 						"SEER Elements : Common to both messages " + mber.getName() + " " +
@@ -114,7 +110,6 @@ public class MdmiUtil {
 
 				}
 				for (MDMIBusinessElementReference mber : differences.entriesOnlyOnRight().values()) {
-					// logger.trace("SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier());
 					onlyinTargetlog.append(
 						"SEER Elements : Only in target " + mber.getName() + " " + mber.getUniqueIdentifier()).append(
 							System.lineSeparator());
@@ -129,7 +124,6 @@ public class MdmiUtil {
 
 				} catch (IOException e) {
 					logger.trace("Unable to log datatypes");
-					// e.printStackTrace();
 				}
 
 			}
@@ -153,39 +147,11 @@ public class MdmiUtil {
 			}
 
 			common.addAll(Collections2.filter(differences.entriesInCommon().values(), predicate));
-			// srcBers.addAll(left.values());
 		}
 
 		logger.debug("Size of Common BE " + common.size());
 
 		if (manyToOneContainers) {
-
-			// if (manyToOneMatches.isEmpty()) {
-			// manyToOneMatches.put("92ad5c46-0554-4919-95ad-ed267e4ec007", new HashSet<String>());
-			//
-			// manyToOneMatches.get("92ad5c46-0554-4919-95ad-ed267e4ec007").add(
-			// "04efdee4-2132-490a-99c4-0f635300879a");
-			// }
-
-			// for (IElementValue iev : srcSemanticModel.getAllElementValues()) {
-			// for (ConversionRule tme : iev.getSemanticElement().getMapToMdmi()) {
-			// if (tme.getBusinessElement().getUniqueIdentifier() != null) {
-			//
-			// for (MDMIBusinessElementReference leftkey : common) {
-			//
-			// for (String key : manyToOneMatches.keySet()) {
-			// if (manyToOneMatches.get(key).contains(leftkey.getUniqueIdentifier())) {
-			// left.get(leftkey).setUniqueIdentifier(key);
-			//
-			// // tme.getBusinessElement().setUniqueIdentifier(key);
-			// }
-			// }
-			//
-			// }
-
-			// }
-			// }
-			// }
 
 		}
 

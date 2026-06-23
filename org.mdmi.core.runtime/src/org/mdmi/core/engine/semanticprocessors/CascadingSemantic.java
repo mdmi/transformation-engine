@@ -45,24 +45,8 @@ public class CascadingSemantic extends ConfigurableSemanticProcessor {
 	@Override
 	public void setArguments(Object arguments) {
 		Map map = (Map) arguments;
-		// this.direction = DIRECTION.valueOf(map.get("direction").toString());
 
 	}
-
-	// void serializeXDataStruct(XDataStruct v, int indent) {
-	// for (String field : v.getFields()) {
-	// if (v.getValue(field) != null) {
-	// if (v.getValue(field) instanceof String) {
-	// logger.trace(StringUtils.repeat(".", indent + 2) + " " + field + " = " + v.getValue(field));
-	// } else if (v.getValue(field) instanceof XDataStruct) {
-	// logger.trace(StringUtils.repeat("-", indent + 2) + "> " + field);
-	// serializeXDataStruct((XDataStruct) v.getValue(field), indent + 4);
-	// } else {
-	// logger.trace(v.getValue(field).getClass() + " " + v.getValue(field));
-	// }
-	// }
-	// }
-	// }
 
 	void collectMapTarget(String target) {
 
@@ -71,17 +55,6 @@ public class CascadingSemantic extends ConfigurableSemanticProcessor {
 	void cascade(IElementValue semanticElement, IElementValue cascadingValue, String target) {
 
 		String businessElementName = "NONE";
-
-		// if (semanticElement.getXValue().getValue() instanceof XDataStruct) {
-		// logger.trace(
-		// StringUtils.repeat("-", indent) + "> " + semanticElement.getName() + " (" + businessElementName + ")");
-		// XDataStruct v = (XDataStruct) semanticElement.getXValue().getValue();
-		// serializeXDataStruct(v, indent);
-		// } else {
-		// logger.trace(
-		// StringUtils.repeat("-", indent) + "> " + semanticElement.getName() + " (" + businessElementName + ")" +
-		// " = " + semanticElement.getXValue().getValue());
-		// }
 
 		for (IElementValue childSemanticElement : semanticElement.getChildren()) {
 			cascade(childSemanticElement, cascadingValue, target);
@@ -98,7 +71,6 @@ public class CascadingSemantic extends ConfigurableSemanticProcessor {
 	public void processSemanticModel(ElementValueSet elementValueSet) {
 
 		XElementValue cascadeSource = null;
-		// XElementValue cascadetarget = null;
 		ArrayList<XElementValue> cascadetargets = new ArrayList<>();
 		XElementValue cascadeParent = null;
 		XElementValue idvalue = null;
@@ -157,7 +129,6 @@ public class CascadingSemantic extends ConfigurableSemanticProcessor {
 							XValue whatisthis = idvalue.getXValue();
 
 							for (Field f : whatisthis.getDatatype().getFields()) {
-								// System.out.println(f.getName());
 								t.getXValue().addValue(f.getName(), idvalue.getXValue().getValueByName(f.getName()));
 
 							}

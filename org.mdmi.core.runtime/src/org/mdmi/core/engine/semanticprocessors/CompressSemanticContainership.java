@@ -96,25 +96,7 @@ public class CompressSemanticContainership extends ConfigurableSemanticProcessor
 
 	void log(IElementValue semanticElement, int indent) {
 
-		// if (direction.equals(DIRECTION.TO)) {
-		//
-		// }
-		//
-		// logger.trace("***********************************************");
-		// logger.trace("***********************************************");
-		// logger.trace("***********************************************");
-
 		String businessElementName = "NONE";
-
-		// if (direction.equals(DIRECTION.TO)) {
-		// for (ConversionRule fromRule : semanticElement.getSemanticElement().getMapToMdmi()) {
-		// businessElementName = fromRule.getBusinessElement().getName();
-		// }
-		// } else {
-		// for (ConversionRule fromRule : semanticElement.getSemanticElement().getMapFromMdmi()) {
-		// businessElementName = fromRule.getBusinessElement().getName();
-		// }
-		// }
 
 		if (semanticElement.getXValue().getValue() instanceof XDataStruct) {
 			logger.trace(

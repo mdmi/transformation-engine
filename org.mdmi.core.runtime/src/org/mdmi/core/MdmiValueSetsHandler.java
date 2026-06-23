@@ -39,8 +39,6 @@ public final class MdmiValueSetsHandler {
 		valueSetMaps = new HashMap<>();
 	}
 
-	// TODO: made public for testing (shouldn't check in)
-	// protected MdmiValueSetsHandler( File sourceFile ) {
 	public MdmiValueSetsHandler(File sourceFile) {
 		this();
 		if (null != sourceFile && sourceFile.exists() && sourceFile.isFile()) {

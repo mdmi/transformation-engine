@@ -26,7 +26,6 @@ public class PiqiSemanticEngine implements ISemanticProcessor {
 	 */
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -35,7 +34,6 @@ public class PiqiSemanticEngine implements ISemanticProcessor {
 	 */
 	@Override
 	public boolean canProcess(MessageModel messageModel) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -44,7 +42,6 @@ public class PiqiSemanticEngine implements ISemanticProcessor {
 	 */
 	@Override
 	public void processSemanticModel(ElementValueSet semanticModel) {
-		// TODO Auto-generated method stub
 
 	}
 

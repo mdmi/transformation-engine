@@ -67,7 +67,6 @@ public class RuntimeService {
 
 		String result = tMsg.getDataAsString();
 
-		// Clean references to allow GC
 		ti.targetMessage = null;
 		ti.sourceMessage = null;
 

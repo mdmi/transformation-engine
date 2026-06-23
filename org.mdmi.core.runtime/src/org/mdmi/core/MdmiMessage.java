@@ -86,7 +86,6 @@ public final class MdmiMessage {
 	 *
 	 */
 	public MdmiMessage() {
-		// TODO Auto-generated constructor stub
 	}
 
 	/**

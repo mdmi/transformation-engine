@@ -1,4 +1,3 @@
-// Generated from XPath.g4 by ANTLR 4.13.2
 package org.mdmi.core.engine.parser.xml;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -92,7 +91,6 @@ public class XPathLexer extends Lexer {
 	public Vocabulary getVocabulary() {
 		return VOCABULARY;
 	}
-
 
 	public XPathLexer(CharStream input) {
 		super(input);

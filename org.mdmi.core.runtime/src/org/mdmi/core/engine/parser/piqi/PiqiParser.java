@@ -36,7 +36,6 @@ public class PiqiParser implements ISemanticParser {
 	public void buildSemanticModel(MessageModel mdl, ISyntaxNode root, ElementValueSet eset, Properties properties,
 			JSONObject values) {
 		System.err.println("aaaa");
-		// TODO Auto-generated method stub
 
 	}
 
@@ -47,7 +46,6 @@ public class PiqiParser implements ISemanticParser {
 	 */
 	@Override
 	public ISyntaxNode createNewSyntacticModel(MessageModel mdl, ElementValueSet eset, Properties properties) {
-		// TODO Auto-generated method stub
 		System.err.println("bbbb");
 		return null;
 	}

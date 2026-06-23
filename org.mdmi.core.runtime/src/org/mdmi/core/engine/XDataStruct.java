@@ -60,7 +60,6 @@ public class XDataStruct extends XData {
 		EList<Field> fields = ((DTCStructured) owner.getDatatype()).getFields();
 		for (int i = 0; i < fields.size(); i++) {
 			XValue v = new XValue(this, fields.get(i));
-			// v.intializeStructs();
 			m_values.put(v.getName(), v);
 		}
 	}
@@ -75,8 +74,6 @@ public class XDataStruct extends XData {
 	 */
 	XDataStruct(XValue owner, XDataStruct src) {
 		super(owner, src.m_datatype);
-
-		// src.m_values;
 
 		for (String key : src.m_values.keySet()) {
 			XValue xv = src.m_values.get(key);
@@ -135,22 +132,6 @@ public class XDataStruct extends XData {
 		return xValue;
 	}
 
-	// public XValue getXValueAsString(String fieldName) {
-	// if (fieldName == null) {
-	// throw new IllegalArgumentException("Null 'fieldName'");
-	// }
-	// XValue xValue = m_values.get(fieldName);
-	//
-	// StringBuffer sb = new StringBuffer();
-	//
-	// for (Object s : xValue.getValues()) {
-	// XValue xs = (XValue) s;
-	// sb.append(xs.getValue()).append(" ");
-	// }
-	//
-	// return xValue;
-	// }
-
 	/**
 	 * Set the value for a field, replaces the existing one.
 	 *
@@ -203,16 +184,12 @@ public class XDataStruct extends XData {
 
 		logger.trace("Setting " + fieldName + " to -->>  " + value);
 		String[] segments = fieldName.split("\\.");
-		// if length == 1 then we do not have a path so set normally
 		if (segments.length == 1) {
 			setValue(fieldName, value);
 			return;
 		}
 
-		// pop the corresponding XValue from current XDataStructure using first segment
 		XValue xvalue = m_values.get(segments[0]);
-		// If the segments is 2 - need to process slightly differently because we have
-		// XValue versus XDataStruct
 		if (segments.length == 2) {
 			if (value instanceof Collection) {
 				Collection values = (Collection) value;
@@ -227,15 +204,12 @@ public class XDataStruct extends XData {
 
 			return;
 		}
-		// Start our journey down the segments by getting the corresponding XDataStructure from the XValue
-		// creating a new one if there is none
 
 		XDataStruct xds = (XDataStruct) xvalue.getValueByName(segments[1]);
 		if (xds == null) {
 			xds = (XDataStruct) xvalue.getNewByName(segments[1]);
 		}
 
-		// loop over the middle segments using getValueSafely which will not returen null
 		int pathCtr = 2;
 
 		while (pathCtr < segments.length - 1) {
@@ -243,7 +217,6 @@ public class XDataStruct extends XData {
 			pathCtr++;
 		}
 
-		// finally set our value with the last segment
 		if (xds == null) {
 			logger.error("Error processing " + this.toString());
 			return;
@@ -316,15 +289,6 @@ public class XDataStruct extends XData {
 	 *            The name of the field to get.
 	 * @return The value of the field.
 	 */
-	// public Object addValueSafely(String fieldName) {
-	//
-	// // XValue xv = getXValue(fieldName);
-	// // if (xv == null) {
-	// // throw new MdmiException("Invalid fieldName: " + fieldName);
-	// // }
-	// //
-	// // return xv.getValueSafelyByIndex(index);
-	// }
 
 	/**
 	 * Clear the specified value, setting it to null in effect.
@@ -344,8 +308,6 @@ public class XDataStruct extends XData {
 		v.clear();
 	}
 
-	// @Override
-	// protected String toString(String indent) {
 	//// StringBuffer sb = new StringBuffer();
 	//// if (null == indent) {
 	//// indent = "";
@@ -360,7 +322,6 @@ public class XDataStruct extends XData {
 	//// sb.append("\r\n");
 	//// }
 	//// return sb.toString();
-	// }
 
 	@Override
 	public boolean isEmpty() {
@@ -415,7 +376,6 @@ public class XDataStruct extends XData {
 				for (Object object : theValue.getValues()) {
 					if (object instanceof XDataStruct) {
 						XDataStruct fieldValue = (XDataStruct) object;
-						// sb.append(fieldValue.get).append(" ");
 						sb.append(fieldValue.getXValues()).append(" ");
 					} else {
 						sb.append(object).append(" ");

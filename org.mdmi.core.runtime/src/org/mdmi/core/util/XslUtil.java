@@ -138,7 +138,6 @@ public class XslUtil {
 	 *             If the rule is invalid, or its evaluation fails for any reason.
 	 */
 	public static String getString(Node node, XPathExpression rule) {
-		// try a node first
 		try {
 			Node n = getNode(node, rule);
 			if (n != null) {
@@ -311,7 +310,6 @@ public class XslUtil {
 				"Invalid XSLT expression: '" + path + "' may not contain relative descendants '//'");
 		}
 
-		// first we check if the path exists, if it does we are done
 		NodeList nodeList = XslUtil.getNodeList(parent, path);
 		if (nodeList != null) {
 			int count = nodeList.getLength();
@@ -324,7 +322,6 @@ public class XslUtil {
 		if (null == axesPath) {
 			return createNodeForPathNoAxes(parent, path, ordinalIndex); // no axis
 		}
-		// we found an axis
 		String sPath = axesPath[0];
 		String sAxe = axesPath[1];
 		String sAxePath = axesPath[2];
@@ -379,7 +376,6 @@ public class XslUtil {
 		int islh = indexOfNotInQuotes(path, '/');
 		int icat = indexOfNotInQuotes(path, '@');
 
-		// start with border cases
 		if (isqb == 0) {
 			throw new IllegalArgumentException("Invalid xpath expression '" + path + "', cannot start with '['");
 		}
@@ -391,9 +387,7 @@ public class XslUtil {
 		}
 
 		if (isqb < 0) {
-			// no index or predicates
 			if (icat == 0) {
-				// is of this form @attr
 				if (0 < islh) {
 					throw new IllegalArgumentException(
 						"Invalid xpath expresion '" + path + "', cannot contain '/' after '@'");
@@ -402,13 +396,10 @@ public class XslUtil {
 				return getOrCreateAttribute(parent, name);
 			}
 			if (icat < 0) {
-				// no attribute, must be something like elem1/elem2/.../elemN
-				// or elem1/elem2/.../elemN/text()
 				int i = islh;
 				String spath = path;
 				Element p = parent;
 				while (0 < i) {
-					// get the first element, make sure it exists, if not make one
 					String name = spath.substring(0, i);
 					spath = spath.substring(i + 1);
 					i = indexOfNotInQuotes(spath, '/');
@@ -424,7 +415,6 @@ public class XslUtil {
 					return getOrCreateElement(p, spath, ordinalIndex);
 				}
 			} else {
-				// 0 < icat, that is elem@attr, or elem1/elem2/.../elemN@attr
 				if (icat < path.lastIndexOf('/')) {
 					throw new IllegalArgumentException(
 						"Invalid xpath expresion '" + path + "', cannot contain '/' after '@'");
@@ -434,7 +424,6 @@ public class XslUtil {
 				Element p = parent;
 				String name = null;
 				while (0 < i) {
-					// get the first element, make sure it exists, if not make one
 					name = spath.substring(0, i);
 					spath = spath.substring(i + 1);
 					i = indexOfNotInQuotes(spath, '/');
@@ -449,7 +438,6 @@ public class XslUtil {
 				return getOrCreateAttribute(p, spath);
 			}
 		} else {
-			// we have and index like elem[2], or a predicate like [elem[@attr='test']]
 			if (icat == 0) {
 				throw new IllegalArgumentException(
 					"Invalid xpath expresion '" + path + "', cannot contain '@' after '['");
@@ -461,7 +449,6 @@ public class XslUtil {
 			String name = null;
 			while (0 < x || 0 <= y) {
 				if (0 < x && x < y || y < 0) {
-					// e[...]
 					String[] a = splitForBrackets(spath);
 					name = a[0];
 					String expr = a[1]; // never null here, we just checked for '['
@@ -470,8 +457,6 @@ public class XslUtil {
 							: a[2];
 					int index = xpathIndex(expr);
 					if (0 < index) {
-						// numeric index, one based
-						// get all child elements of the specified name and make sure we have at least index of them
 						ArrayList<Element> elems = XmlUtil.getElements(p, name);
 						while (elems.size() < index) {
 							XmlUtil.addElement(p, name);
@@ -479,7 +464,6 @@ public class XslUtil {
 						}
 						p = elems.get(index - 1);
 					} else {
-						// we have a predicate, first check if it exists
 						String pred = name + '[' + expr + ']';
 						boolean isFinal = spath.length() <= 0;
 						NodeList nl = XslUtil.getNodeList(p, pred);
@@ -509,7 +493,6 @@ public class XslUtil {
 						}
 					}
 				} else {
-					// e/e,
 					name = spath.substring(0, y);
 					spath = spath.substring(y + 1);
 					p = getOrCreateElement(p, name);
@@ -545,17 +528,14 @@ public class XslUtil {
 
 	private static void processPredicate(Element child, String expr) {
 		if (expr.startsWith("@")) {
-			// @attr='value'
 			String[] a = parseAttrValue(expr);
 			Node n = getOrCreateAttribute(child, a[0]);
 			n.setTextContent(a[1]);
 		} else if (0 < indexOfNotInQuotes(expr, '[')) {
-			// nested index or predicate, we recursively call createNodeForChild
 			createNodeForPath(child, expr, -1);
 		} else {
 			int ieq = indexOfNotInQuotes(expr, '=');
 			if (0 < ieq) {
-				// e1/e2/../text()='value'
 				String[] a = parseElemValue(expr);
 				Node n = createNodeForPath(child, a[0], -1);
 				if (null == n) {
@@ -568,7 +548,6 @@ public class XslUtil {
 		}
 	}
 
-	// e1/e2/../text()='value'
 	private static String[] parseElemValue(String s) {
 		if (s == null || s.length() <= 0) {
 			throw new IllegalArgumentException("Invalid argument expresion " + s);
@@ -580,7 +559,6 @@ public class XslUtil {
 		return a;
 	}
 
-	// @name='value'
 	private static String[] parseAttrValue(String s) {
 		if (s == null || s.length() <= 0 || !s.startsWith("@")) {
 			throw new IllegalArgumentException("Invalid argument expresion " + s);
@@ -814,7 +792,6 @@ public class XslUtil {
 			stringBuilder.append(DEFAULT_NS);
 			stringBuilder.append(":");
 		}
-		// todo rewrite, only for test
 		tag = tag.replace("[templateId", "[" + DEFAULT_NS + ":" + "templateId");
 		stringBuilder.append(tag);
 
@@ -825,7 +802,6 @@ public class XslUtil {
 			return xPath;
 		}
 		String namespaceURI = context.getNamespaceURI(DEFAULT_NS);
-		// check if there is any default namespace
 		if (namespaceURI != null && !namespaceURI.isEmpty()) {
 			StringBuilder stringBuilder = new StringBuilder();
 			String[] tags = xPath.split("/");
@@ -924,7 +900,6 @@ public class XslUtil {
 			}
 
 			if (m_cache.size() < maxSize) {
-				// still below cache limit
 				XC xc = new XC();
 				xc.rule = rule;
 				xc.expression = expression;
@@ -936,7 +911,6 @@ public class XslUtil {
 					m_lastUsedIndex.put(xc.lastUsed, i);
 				}
 			} else {
-				// need to remove the oldest one from the cache
 				synchronized (lock) {
 					NavigableMap.Entry<Date, Integer> last = m_lastUsedIndex.lastEntry();
 					Integer pos = last.getValue();

@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Base64;
 
-//import org.apache.commons.codec.binary.Base64;
 import org.mdmi.core.MdmiException;
 
 /**
@@ -143,7 +142,6 @@ public class StringUtil {
 		try {
 			return Base64.getEncoder().encodeToString(a);
 
-			// return Base64.encodeBase64String(a);
 		} catch (Exception ex) {
 			throw new MdmiException(ex, "Encode fails");
 		}

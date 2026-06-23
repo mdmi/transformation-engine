@@ -59,19 +59,6 @@ abstract class XData {
 		return m_datatype;
 	}
 
-	// @Override
-	// public String toString() {
-	// return toString("");
-	// }
-
-	// /**
-	// * Build the string representation of this value.
-	// *
-	// * @param indent The indentation to use.
-	// * @return The string representation of this value.
-	// */
-	// protected abstract String toString(String indent);
-
 	/**
 	 * Return true if the data structure/choice has no value.
 	 *

@@ -150,8 +150,6 @@ public final class ElementValueSet {
 	 */
 	public void addElementValue(IElementValue xelement) {
 
-		// xelement.getSemanticElement().
-
 		theSetOfAll.add(xelement);
 		if (xelement.getSemanticElement() != null &&
 				!StringUtils.isEmpty(xelement.getSemanticElement().getUniqueId())) {

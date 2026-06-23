@@ -36,8 +36,6 @@ public final class Mdmi {
 
 		public String mapFileName;
 
-		// public String mapBuilderClassName;
-
 		public String synSvcClassName;
 
 		public String synSvcJarName;
@@ -77,7 +75,6 @@ public final class Mdmi {
 		public MapInfo(String mapName, String mapFile, String mapBuilder) {
 			this.mapName = mapName;
 			mapFileName = mapFile;
-			// mapBuilderClassName = mapBuilder;
 		}
 	} // MdmiConfig$MapInfo
 
@@ -179,18 +176,6 @@ public final class Mdmi {
 		} catch (IOException e) {
 
 		}
-
-		// getPreProcessors().addPreProcessor(new Deliminated2XML("CSV2XML", ","));
-		// getPreProcessors().addPreProcessor(new HL7V2MessagePreProcessor());
-		// getPreProcessors().addPreProcessor(new PreProcessorForFHIRJson());
-
-		// getPostProcessors().addPostProcessor(new XML2Deliminated("XML2CSV", ","));
-		// getPostProcessors().addPostProcessor(new XML2Deliminated("XML2PIPE", "\\|"));
-		// getPostProcessors().addPostProcessor(new CDAPostProcessor());
-		// getPostProcessors().addPostProcessor(new HL7V2MessagePostProcessor());
-		// getPostProcessors().addPostProcessor(new SQLInsertPostProcessor());
-		// getPostProcessors().addPostProcessor(new FHIRSTU3PostProcessorJson());
-		// getPostProcessors().addPostProcessor(new FHIRR4PostProcessorJson());
 
 	}
 
@@ -304,104 +289,14 @@ public final class Mdmi {
 		exec(transferInfo, true);
 	}
 
-	// public static IExpressionInterpreter getInterpreter(ConversionRule cr, XElementValue context, String name,
-	// XValue value) {
-	// String lang = cr.getRuleExpressionLanguage();
-	// SemanticElement se = cr.getOwner();
-	// if (null == lang || lang.length() <= 0) {
-	// SemanticElementSet ses = se.getElementSet();
-	// MessageModel mm = ses.getModel();
-	// MessageGroup mg = mm.getGroup();
-	// lang = mg.getDefaultRuleExprLang();
-	// if (lang == null || lang.length() <= 0) {
-	// throw new MdmiException(
-	// "Language not set for conversion in semantic element {0} and no default set in model group {1}",
-	// se.getName(), mg.getName());
-	// }
-	// }
-	// return getInterpreter(lang, context, name, value);
-	// }
-	//
-	// public static IExpressionInterpreter getInterpreter(DataRule dr, XElementValue context, String name, XValue value) {
-	// String lang = dr.getRuleExpressionLanguage();
-	// SemanticElement se = dr.getSemanticElement();
-	// if (null == lang || lang.length() <= 0) {
-	// SemanticElementSet ses = se.getElementSet();
-	// MessageModel mm = ses.getModel();
-	// MessageGroup mg = mm.getGroup();
-	// lang = mg.getDefaultRuleExprLang();
-	// if (lang == null || lang.length() <= 0) {
-	// throw new MdmiException(
-	// "Language not set for data rule in semantic element {0} and no default set in model group {1}",
-	// se.getName(), mg.getName());
-	// }
-	// }
-	// return getInterpreter(lang, context, name, value);
-	// }
-	//
-	// public static IExpressionInterpreter getInterpreter(SemanticElementBusinessRule sebr, XElementValue context,
-	// String name, XValue value) {
-	// String lang = sebr.getRuleExpressionLanguage();
-	// SemanticElement se = sebr.getSemanticElement();
-	// if (null == lang || lang.length() <= 0) {
-	// SemanticElementSet ses = se.getElementSet();
-	// MessageModel mm = ses.getModel();
-	// MessageGroup mg = mm.getGroup();
-	// lang = mg.getDefaultRuleExprLang();
-	// if (lang == null || lang.length() <= 0) {
-	// throw new MdmiException(
-	// "Language not set for business rule in semantic element {0} and no default set in model group {1}",
-	// se.getName(), mg.getName());
-	// }
-	// }
-	// return getInterpreter(lang, context, name, value);
-	// }
-	//
-	// public static IExpressionInterpreter getInterpreter(SemanticElementRelationship ser, XElementValue context,
-	// String name, XValue value) {
-	// String lang = ser.getRuleExpressionLanguage();
-	// SemanticElement se = ser.getContext();
-	// if (null == lang || lang.length() <= 0) {
-	// SemanticElementSet ses = se.getElementSet();
-	// MessageModel mm = ses.getModel();
-	// MessageGroup mg = mm.getGroup();
-	// lang = mg.getDefaultRuleExprLang();
-	// if (lang == null || lang.length() <= 0) {
-	// throw new MdmiException(
-	// "Language not set for business rule in semantic element {0} and no default set in model group {1}",
-	// se.getName(), mg.getName());
-	// }
-	// }
-	// return getInterpreter(lang, context, name, value);
-	// }
-
-	// public static IExpressionInterpreter getInterpreter(String lang, XElementValue context, String name, XValue value) {
-	// if (lang == null || lang.length() <= 0) {
-	// throw new MdmiException("Language not set!");
-	// }
-	// if (lang.equalsIgnoreCase("js") || lang.equalsIgnoreCase("javascript")) {
-	// return new JsAdapter(
-	// context == null
-	// ? null
-	// : context.getOwner(),
-	// name, value);
-	// }
-	// throw new MdmiException("Language {0} not supported!", lang);
-	// }
-
-	// call the engine to execute
 	private void exec(MdmiTransferInfo transferInfo, boolean async) {
 		try {
 			logger.trace("exec(MdmiTransferInfo transferInfo, boolean async)  " + Thread.currentThread().getName());
 			transferInfo.sourceModel.resolve();
 			transferInfo.targetModel.resolve();
-			// if (async) {
-			// getEngine().executeTransferAsync(transferInfo);
-			// } else {
 			logger.trace("Start getEngine().executeTransfer(transferInfo)" + Thread.currentThread().getName());
 			getEngine().executeTransfer(transferInfo);
 			logger.trace("End getEngine().executeTransfer(transferInfo)" + Thread.currentThread().getName());
-			// }
 		} catch (MdmiException ex) {
 			throw ex;
 		} catch (Exception ex) {
@@ -418,9 +313,6 @@ public final class Mdmi {
 		this.start();
 	}
 
-	// load the configuration data.
-
-	// get the default root folder, if none was specified
 	private static File getDefaultRootDir() {
 		String d = System.getProperties().getProperty(PARAM_MDMI_ROOT_DIR);
 		if (d != null) {
@@ -491,22 +383,4 @@ public final class Mdmi {
 		this.m_engine = m_engine;
 	}
 
-	/**
-	 * @param sMod
-	 * @param tMsg
-	 * @param semchild
-	 * @param bers
-	 * @param location
-	 */
-	// public void executeTransfer(MdmiModelRef sMod, MdmiMessage tMsg, SemanticElement semanticContainer,
-	// ArrayList<MDMIBusinessElementReference> bers, List<SemanticElement> semanticElements, String location) {
-	// try {
-	// getEngine().executeTransfer(sMod, tMsg, bers, semanticContainer, semanticElements, location);
-	// } catch (MdmiException ex) {
-	// throw ex;
-	// } catch (Exception ex) {
-	// throw new MdmiException(ex, "Mdmi.exec() Unexpected exception for transformnation ");
-	// }
-	//
-	// }
 } // Mdmi

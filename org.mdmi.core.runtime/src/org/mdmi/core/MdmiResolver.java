@@ -131,9 +131,6 @@ public class MdmiResolver {
 	public String getEngineConfigurations() {
 		ArrayList<Object> configurations = new ArrayList<Object>();
 		configurations.addAll(getActiveMaps());
-		// TODO Fix issue with GSON serialization on processors
-		// configurations.addAll(Mdmi.INSTANCE().getPreProcessors().getPreProcessors());
-		// configurations.addAll(Mdmi.INSTANCE().getPostProcessors().getPostProcessors());
 		for (IPreProcessor preprocessor : Mdmi.INSTANCE().getPreProcessors().getPreProcessors()) {
 			configurations.add(preprocessor.getName());
 		}
@@ -176,7 +173,6 @@ public class MdmiResolver {
 
 			MessageGroup messageGroup = MDMIUtil.load(inputStream);
 
-			// for (MessageGroup messageGroup : mgs) {
 			logger.debug("Loaded message group " + messageGroup.getName());
 			for (MessageModel messageModel : messageGroup.getModels()) {
 				logger.debug("Loaded message model " + messageModel.getMessageModelName());
@@ -226,9 +222,6 @@ public class MdmiResolver {
 	 * @return The model if found, null otherwise.
 	 */
 	public MessageModel getModel(String messageGroup, String messageModel) {
-		// if (messageGroup == null || messageModel == null) {
-		// throw new IllegalArgumentException("Null argument");
-		// }
 		synchronized (themaps) {
 			MI mi = themaps.get(createKey(messageGroup, messageModel));
 			if (mi == null) {
@@ -238,24 +231,6 @@ public class MdmiResolver {
 			return mi.messageGroup.getModel(messageModel);
 		}
 	}
-
-	/**
-	 * Get the requested message group by group name.
-	 *
-	 * @param messageGroup
-	 *            The message group name.
-	 * @return The message group if found, null otherwise.
-	 */
-	// public MessageGroup getMessageGroup(String messageGroup) {
-	// if (messageGroup == null) {
-	// throw new IllegalArgumentException("Null argument");
-	// }
-	// MI mi = m_maps.get(messageGroup);
-	// if (mi == null) {
-	// return null;
-	// }
-	// return mi.messageGroup;
-	// }
 
 	/**
 	 * Get the message group for the specified MdmiValueSetsHandler.
@@ -395,10 +370,7 @@ public class MdmiResolver {
 							case "PIQI":
 								return new org.mdmi.core.engine.parsers.json.JsonSyntacticParser();
 
-							// (ISyntacticParser) Class.forName(
-							// "org.mdmi.engine.parsers.MLSyntacticParser").newInstance();
 							default:
-								// TreeWalker tw;
 								return new org.mdmi.core.engine.parser.xml.DOMSAXSyntacticParser(
 									messageGroup.getName());
 						}
@@ -416,14 +388,7 @@ public class MdmiResolver {
 		}
 
 		ISemanticParser getSemanticParser() {
-
-			// if ("PIQI".equals(messageGroup.getName())) {
-			// return new PiqiParser();
-			// } else {
-
 			return new SemanticParser(messageGroup);
-			// }
-
 		}
 	} // MdmiMapResolver$MT
 

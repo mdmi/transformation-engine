@@ -46,7 +46,6 @@ public class XElementValue implements IElementValue {
 
 		while (!m_children.isEmpty()) {
 			for (XElementValue c : m_children) {
-				// c.zap();
 				m_owner.removeElementValue(c);
 			}
 		}
@@ -90,7 +89,6 @@ public class XElementValue implements IElementValue {
 		m_owner.addElementValue(this);
 	}
 
-	// a private clone
 	private XElementValue(XElementValue src, boolean deep) {
 		m_semanticElement = src.m_semanticElement;
 		if (deep) {
@@ -222,7 +220,6 @@ public class XElementValue implements IElementValue {
 	@Override
 	public void removeChild(IElementValue child) {
 		m_children.remove(child);
-		// child.setParent(this);
 	}
 
 	@Override
@@ -233,11 +230,6 @@ public class XElementValue implements IElementValue {
 		}
 		return a;
 	}
-
-	// public void removeChild(IElementValue child) {
-	// m_children.remove(child);
-	// child.setParent(null);
-	// }
 
 	public void addRelation(String name, IElementValue relation) {
 		m_relations.add(new RelElement(name, (XElementValue) relation));
@@ -276,11 +268,6 @@ public class XElementValue implements IElementValue {
 		return m_owner;
 	}
 
-	// @Override
-	// public String toString() {
-	// return toString("");
-	// }
-
 	String toStringShort() {
 		if (m_xvalue.size() <= 0) {
 			return "null";
@@ -302,38 +289,7 @@ public class XElementValue implements IElementValue {
 		if (StringUtils.isEmpty(uniqueID)) {
 			uniqueID = UUID.randomUUID().toString();
 		}
-		// TODO Auto-generated method stub
 		return uniqueID;
 	}
 
-	// String toString(String indent) {
-	// StringBuffer sb = new StringBuffer();
-	// sb.append(indent);
-	// if (indent.length() <= 0) {
-	// sb.append("SemanticElement: ");
-	// }
-	// sb.append(getName());
-	// sb.append("\r\n");
-	// indent += " ";
-	// if (m_parent != null) {
-	// sb.append(indent + "parent: " + m_parent.getName() + " [" + m_parent.toStringShort() + "]\r\n");
-	// }
-	// if (m_children.size() > 0) {
-	// sb.append(indent + "children:\r\n");
-	// for (int i = 0; i < m_children.size(); i++) {
-	// XElementValue xe = m_children.get(i);
-	// sb.append(indent + " " + xe.getName() + " [" + xe.toStringShort() + "]\r\n");
-	// }
-	// }
-	// if (m_relations.size() > 0) {
-	// sb.append(indent + "relations:\r\n");
-	// for (int i = 0; i < m_relations.size(); i++) {
-	// RelElement re = m_relations.get(i);
-	// sb.append(indent + " " + re.name + " [" + re.relatedElement.toStringShort() + "]\r\n");
-	// }
-	// }
-	// sb.append(m_xvalue.toString(indent));
-	// sb.append("\r\n");
-	// return sb.toString();
-	// }
 } // XElementValue

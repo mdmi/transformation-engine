@@ -39,7 +39,6 @@ public final class XmlParser {
 	private boolean m_strict; // if true, both errors and fatal errors set the m_errors
 
 	private boolean m_errors; // flag is set to true if there are any fatal errors
-								// (or errors if the m_strict is true)
 
 	private ArrayList<String> m_messages; // will be initialized for each parse
 
@@ -81,10 +80,7 @@ public final class XmlParser {
 			boolean validating // default is false
 	) {
 		m_strict = strict;
-		// force Xerces. Alternative: new org.apache.xerces.jaxp.DocumentBuilderFactoryImpl();
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		// factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-		// factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
 		factory.setCoalescing(coalescing);
 		factory.setExpandEntityReferences(expandEntityReferences);
 		factory.setIgnoringComments(ignoreComments);

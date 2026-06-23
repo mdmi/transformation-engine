@@ -121,12 +121,6 @@ public final class MdmiModelRef {
 	 * Resolve will NOT attempt to load the map, must be already loaded.
 	 */
 	public void resolve() {
-		// if (m_groupName == null || m_groupName.length() <= 0) {
-		// throw new MdmiException("Invalid call, message group name was not set!");
-		// }
-		// if (m_modelName == null || m_modelName.length() <= 0) {
-		// throw new MdmiException("Invalid call, message model name was not set!");
-		// }
 
 		m_model = Mdmi.INSTANCE().getResolver().getModel(m_groupName, m_modelName);
 		if (m_model == null) {

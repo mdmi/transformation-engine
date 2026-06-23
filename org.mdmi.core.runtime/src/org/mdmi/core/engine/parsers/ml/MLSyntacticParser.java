@@ -78,7 +78,6 @@ public class MLSyntacticParser implements ISyntacticParser {
 	 */
 	@Override
 	public ISyntaxNode parse(MessageModel mdl, MdmiMessage msg) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -139,7 +138,6 @@ public class MLSyntacticParser implements ISyntacticParser {
 		}
 
 		msg.setData(root.toString());
-		// System.out.println(msg.getDataAsString());
 
 	}
 
@@ -165,8 +163,6 @@ public class MLSyntacticParser implements ISyntacticParser {
 		String currentSubject = "";
 
 		int currentSubjectCounter = 0;
-
-		// static final int subjectCounter = 10;
 
 		/**
 		 * @param element
@@ -319,7 +315,6 @@ public class MLSyntacticParser implements ISyntacticParser {
 		 */
 		@Override
 		public void visit(YChoice ychoice) {
-			// TODO Auto-generated method stub
 
 		}
 
@@ -476,7 +471,6 @@ public class MLSyntacticParser implements ISyntacticParser {
 		 */
 		@Override
 		public void visit(YChoice ychoice) {
-			// TODO Auto-generated method stub
 
 		}
 
