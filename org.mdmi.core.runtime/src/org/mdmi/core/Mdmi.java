@@ -86,7 +86,7 @@ public final class Mdmi {
 
 	public static final String PARAM_MDMI_ROOT_DIR = "mdmi.root.dir";
 
-	static private ThreadLocal<Mdmi> mdmiThreadLocal = new ThreadLocal<>() {
+	static private ThreadLocal<Mdmi> mdmiThreadLocal = new ThreadLocal<Mdmi>() {
 
 		/*
 		 * (non-Javadoc)

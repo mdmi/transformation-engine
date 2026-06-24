@@ -79,7 +79,8 @@ public class PiqiSyntaxParser implements ISyntacticParser {
 
 			JSONObject sourceJson = new JSONObject();
 			sourceJson.put("format", node.getSource().getFormat());
-			if (node.getSource() instanceof CDASource cdaSrc) {
+			if (node.getSource() instanceof CDASource) {
+				CDASource cdaSrc = (CDASource) node.getSource();
 				sourceJson.put("xpath", cdaSrc.getXpath());
 				sourceJson.put("section", cdaSrc.getSection());
 				sourceJson.put("documentId", cdaSrc.getDocumentId());
