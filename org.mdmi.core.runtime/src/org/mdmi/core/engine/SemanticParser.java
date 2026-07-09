@@ -151,7 +151,8 @@ public class SemanticParser implements ISemanticParser {
 		for (SemanticElement child : elementValue.getSemanticElement().getChildren()) {
 			if (child.isComputed() && !child.isNullFlavor()) {
 				setComputedValue(elementValue, child, eset, properties);
-			} else if (child.isComputedOut()) {
+			}
+			if (child.isComputedOut()) {
 				setComputedOutValue(
 					child, properties, child.getParent() != null
 							? elementValue
@@ -443,6 +444,75 @@ public class SemanticParser implements ISemanticParser {
 		return semanticRollupInterpreters.get(key);
 	}
 
+	/**
+	 * Searches the subtree rooted at {@code node} for an existing {@link XElementValue}
+	 * whose semantic element name matches {@code semanticName}.
+	 */
+	private XElementValue findInSubtree(XElementValue node, String semanticName) {
+		for (IElementValue child : node.getChildren()) {
+			if (child.getSemanticElement().getName().equals(semanticName)) {
+				return (XElementValue) child;
+			}
+			if (child instanceof XElementValue) {
+				XElementValue found = findInSubtree((XElementValue) child, semanticName);
+				if (found != null) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
+
+	private void ensureSemanticParentChain(XElementValue owner, XElementValue xe) {
+		SemanticElement xeSemantic = xe.getSemanticElement();
+		SemanticElement ownerSemantic = owner.getSemanticElement();
+
+		if (xeSemantic.getParent() == null || xeSemantic.getParent().getName().equals(ownerSemantic.getName())) {
+			owner.addChild(xe);
+			xe.setParent(owner);
+			return;
+		}
+
+		// Build the ancestor chain from xe's immediate semantic parent up to (but not
+		// including) owner's semantic element, collected in order from owner-side down.
+		// This avoids recursive container creation which causes StackOverflowError.
+		List<SemanticElement> chain = new ArrayList<>();
+		SemanticElement cursor = xeSemantic.getParent();
+		int guard = 64;
+		while (cursor != null && !cursor.getName().equals(ownerSemantic.getName()) && --guard > 0) {
+			chain.add(0, cursor); // prepend so index 0 is closest to owner
+			cursor = cursor.getParent();
+		}
+
+		if (cursor == null || guard == 0) {
+			// Semantic parent chain does not reach owner — fall back to direct attachment
+			logger.debug(
+				"ensureSemanticParentChain: parent chain does not reach owner=" + ownerSemantic.getName() + " for xe=" +
+						xeSemantic.getName() + ", attaching directly");
+			owner.addChild(xe);
+			xe.setParent(owner);
+			return;
+		}
+
+		// Walk chain top-down, finding or creating each intermediate container
+		XElementValue current = owner;
+		for (SemanticElement level : chain) {
+			XElementValue next = findInSubtree(current, level.getName());
+			if (next == null) {
+				next = new XElementValue(level, valueSet);
+				logger.debug(
+					"ensureSemanticParentChain: creating container=" + level.getName() + " under current=" +
+							current.getSemanticElement().getName());
+				current.addChild(next);
+				next.setParent(current);
+			}
+			current = next;
+		}
+
+		current.addChild(xe);
+		xe.setParent(current);
+	}
+
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner) {
 
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
@@ -451,23 +521,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 		XElementValue xe = new XElementValue(me, valueSet);
 		if (owner != null) {
-			if (!xe.getSemanticElement().getParent().getName().equals(owner.getSemanticElement().getName())) {
-
-				XElementValue inject = null;
-				for (IElementValue xx : owner.getChildren()) {
-					if (xx.getSemanticElement().getName().equals(me.getParent().getName())) {
-						inject = (XElementValue) xx;
-					}
-				}
-				if (inject == null) {
-					inject = new XElementValue(me.getParent(), valueSet);
-					owner.addChild(inject);
-				}
-				inject.addChild(xe);
-
-			} else {
-				owner.addChild(xe);
-			}
+			ensureSemanticParentChain(owner, xe);
 		}
 
 		MDMIDatatype dt = me.getDatatype();
@@ -781,37 +835,101 @@ public class SemanticParser implements ISemanticParser {
 	 * @param iterator
 	 */
 	void normalizeSemanticContainers(ElementValueSet elementValueSet, IElementValue parent,
-			ListIterator<IElementValue> iterator, HashMap<String, IElementValue> containers) {
+			ListIterator<IElementValue> iterator) {
+		logger.info(
+			"=== normalizeSemanticContainers START parent=" + parent.getName() + "(" + parent.getUniqueId() +
+					") semanticElement=" + parent.getSemanticElement().getName() + " childrenCount=" +
+					parent.getChildren().size());
+
 		ArrayList<IElementValue> remove = new ArrayList<>();
 		for (IElementValue child : parent.getChildren()) {
-			if (!child.getSemanticElement().getParent().getName().equals(parent.getSemanticElement().getName())) {
-				if (!containers.containsKey(child.getSemanticElement().getParent().getName())) {
-					XElementValue x = new XElementValue(
-						child.getSemanticElement().getParent(), elementValueSet, iterator);
-					containers.put(child.getSemanticElement().getParent().getName(), x);
-					parent.addChild(x);
-					x.setParent(parent);
+			SemanticElement childSemantic = child.getSemanticElement();
+			SemanticElement expectedParentSemantic = childSemantic.getParent();
+			SemanticElement actualParentSemantic = parent.getSemanticElement();
+
+			logger.info(
+				"CHECK CHILD child=" + child.getName() + "(" + child.getUniqueId() + ") childSemantic=" +
+						childSemantic.getName() + " expectedParentSemantic=" + (expectedParentSemantic != null
+								? expectedParentSemantic.getName()
+								: "null") +
+						" actualParentSemantic=" + actualParentSemantic.getName());
+
+			if (expectedParentSemantic == null) {
+				logger.info("  -> expectedParentSemantic is null, skipping child");
+				continue;
+			}
+
+			if (!expectedParentSemantic.getName().equals(actualParentSemantic.getName())) {
+				logger.info(
+					"  -> MISMATCH: child semantic parent '" + expectedParentSemantic.getName() +
+							"' does not match current parent '" + actualParentSemantic.getName() + "'");
+
+				String containerKey = expectedParentSemantic.getName();
+
+				IElementValue targetElementValue = null;
+				for (IElementValue xxx : child.getParent().getChildren()) {
+					if (xxx.getSemanticElement().getName().equals(expectedParentSemantic.getName())) {
+						targetElementValue = xxx;
+					}
+
+				}
+				if (targetElementValue == null) {
+					logger.info(" -> CONTAINER NOT FOUND: creating new container for " + containerKey);
+					targetElementValue = new XElementValue(expectedParentSemantic, elementValueSet, iterator);
+					// containers.put(containerKey, x);
+					parent.addChild(targetElementValue);
+					targetElementValue.setParent(parent);
+					logger.info(
+						" -> CONTAINER CREATED: parent=" + parent.getName() + "(" + parent.getUniqueId() +
+								") added container=" + targetElementValue.getName() + "(" +
+								targetElementValue.getUniqueId() + ")");
+					// } else {
+					// logger.info(" -> CONTAINER FOUND: existing container=" + containerKey + " uniqueId=" +
+					// containers.get(containerKey).getUniqueId());
 				}
 
-				IElementValue targetElementValue = containers.get(child.getSemanticElement().getParent().getName());
+				// IElementValue targetElementValue; // = NUcontainers.get(containerKey);
+
+				logger.info(
+					"  -> MOVE CHILD: from parent=" + parent.getName() + "(" + parent.getUniqueId() +
+							") to container=" + targetElementValue.getName() + "(" + targetElementValue.getUniqueId() +
+							") child=" + child.getName() + "(" + child.getUniqueId() + ")");
 
 				targetElementValue.addChild(child);
 				child.setParent(targetElementValue);
 				remove.add(child);
+			} else {
+				logger.info("  -> MATCH: child stays under parent " + actualParentSemantic.getName());
 			}
-
 		}
 
+		logger.info("=== remove loop count=" + remove.size());
 		for (IElementValue r : remove) {
+			logger.info(
+				"REMOVE child from parent=" + parent.getName() + "(" + parent.getUniqueId() + ") child=" + r.getName() +
+						"(" + r.getUniqueId() + ")");
 			parent.removeChild(r);
 		}
 
+		logger.info(
+			"=== normalizeSemanticContainers END parent=" + parent.getName() + "(" + parent.getUniqueId() +
+					") childrenCount=" + parent.getChildren().size());
 	}
 
 	private void setComputedOutValue(SemanticElement se, Properties properties, IElementValue parent) {
 		se.getComputedOutValue().getExpression();
 		se.getComputedOutValue().getLanguage();
-		XElementValue xe = new XElementValue(se, valueSet);
+
+		XElementValue xe = null;
+		for (IElementValue child : parent.getChildren()) {
+			if (child.getSemanticElement().getName().equals(se.getName())) {
+				xe = (XElementValue) child;
+			}
+		}
+		if (xe == null) {
+			xe = new XElementValue(se, valueSet);
+		}
+
 		if (parent != null) {
 			xe.setParent(parent);
 			parent.addChild(xe);
@@ -831,16 +949,16 @@ public class SemanticParser implements ISemanticParser {
 	 *           Support Structure to Structure for roll ups
 	 *
 	 *
-	 * @param se
+	 * @param computedInSE
 	 * @param elementValueSet
 	 * @param properties
 	 */
 	@SuppressWarnings("deprecation")
-	private void setComputedValue(IElementValue parentElement, SemanticElement se, ElementValueSet elementValueSet,
-			Properties properties) {
+	private void setComputedValue(IElementValue parentElement, SemanticElement computedInSE,
+			ElementValueSet elementValueSet, Properties properties) {
 
-		String rule = se.getComputedValue().getExpression();
-		se.getComputedValue().getLanguage();
+		String rule = computedInSE.getComputedValue().getExpression();
+		computedInSE.getComputedValue().getLanguage();
 		HashMap<IElementValue, ArrayList<IElementValue>> valuesByParent = new HashMap<>();
 		HashMap<SemanticElement, String> rulesBySemanticElement = new HashMap<>();
 
@@ -865,8 +983,9 @@ public class SemanticParser implements ISemanticParser {
 			 *
 			 */
 
-			logger.trace("Processing SEMANTICROLLUP " + se.getName());
-			for (SemanticElementRelationship relationship : se.getRelationships()) {
+			logger.trace("Processing SEMANTICROLLUP " + computedInSE.getName());
+
+			for (SemanticElementRelationship relationship : computedInSE.getRelationships()) {
 
 				logger.trace(
 					"Processing SEMANTICROLLUP Relationship " + relationship.getRelatedSemanticElement().getName());
@@ -881,44 +1000,55 @@ public class SemanticParser implements ISemanticParser {
 
 					}
 				}
-				if (elementValueSet.hasElementValuesByName(relationship.getRelatedSemanticElement())) {
 
-					for (IElementValue iev2 : elementValueSet.getElementValuesByType(
-						relationship.getRelatedSemanticElement())) {
+				ArrayList<IElementValue> values = new ArrayList<>();
 
-						logger.trace("Walk the elements " + iev2.getName());
-						IElementValue theParentForRollup = iev2.getParent();
-
-						logger.trace("theParentForRollup  " + theParentForRollup);
-						/*
-						 * Loop for the IElementValue parent - this allows for roll ups where the content is not at the same level
-						 */
-						while ((theParentForRollup != null) && (theParentForRollup.getSemanticElement() != null) &&
-								!theParentForRollup.getSemanticElement().getName().equals(se.getParent().getName())) {
-							theParentForRollup = theParentForRollup.getParent();
-						}
-
-						if (theParentForRollup != null) {
-							if (!valuesByParent.containsKey(theParentForRollup)) {
-								valuesByParent.put(theParentForRollup, new ArrayList<>());
-							}
-
-							valuesByParent.get(theParentForRollup).add(iev2);
-						} else {
-
-							logger.error("Invalid Semantic Rollup Relationship, no apparent parent " + se.getName());
-						}
-
+				for (IElementValue foo2 : parentElement.getChildren()) {
+					if (foo2.getSemanticElement().getName().equals(
+						relationship.getRelatedSemanticElement().getName())) {
+						values.add(foo2);
 					}
+
 				}
+				if (!values.isEmpty()) {
+
+				}
+				// for (IElementValue iev2f : elementValueSet.getElementValuesByType(
+				// relationship.getRelatedSemanticElement())) {
+
+				// logger.trace("Walk the elements " + iev2.getName());
+				IElementValue theParentForRollup = parentElement;
+
+				// logger.trace("theParentForRollup " + theParentForRollup);
+				/*
+				 * Loop for the IElementValue parent - this allows for roll ups where the content is not at the same level
+				 */
+				// while ((theParentForRollup != null) && (theParentForRollup.getSemanticElement() != null) &&
+				// !theParentForRollup.getSemanticElement().getName().equals(computedInSE.getParent().getName())) {
+				// theParentForRollup = theParentForRollup.getParent();
+				// }
+
+				// if (theParentForRollup != null) {
+				if (!valuesByParent.containsKey(theParentForRollup)) {
+					valuesByParent.put(theParentForRollup, new ArrayList<>());
+				}
+
+				valuesByParent.get(theParentForRollup).addAll(values);
+				// } else {
+				//
+				// logger.error("Invalid Semantic Rollup Relationship, no apparent parent " + computedInSE.getName());
+				// }
+
 			}
+			// }
+			// }
 
 			logger.trace("Root level parent = null" + valuesByParent.isEmpty());
 			if (valuesByParent.isEmpty()) {
-				if (se.getParent() == null) {
+				if (computedInSE.getParent() == null) {
 					logger.trace("Root level parent = null");
 				} else {
-					logger.trace("Root level parent" + se.getParent());
+					logger.trace("Root level parent" + computedInSE.getParent());
 				}
 			}
 
@@ -937,7 +1067,7 @@ public class SemanticParser implements ISemanticParser {
 			 *
 			 */
 			for (IElementValue parentValue : valuesByParent.keySet()) {
-				XElementValue computedInElement = new XElementValue(se, elementValueSet);
+				XElementValue computedInElement = new XElementValue(computedInSE, elementValueSet);
 				parentValue.addChild(computedInElement);
 				computedInElement.setParent(parentValue);
 				for (IElementValue rollupValue : valuesByParent.get(parentValue)) {
@@ -975,7 +1105,8 @@ public class SemanticParser implements ISemanticParser {
 								} else {
 
 									getSemanticInterpreter().execute(
-										SemanticInterpreter.getFunctionName(rollupValue.getSemanticElement(), se),
+										SemanticInterpreter.getFunctionName(
+											rollupValue.getSemanticElement(), computedInSE),
 										computedInElement, rollupValue.getXValue().getValue());
 
 								}
@@ -1004,20 +1135,22 @@ public class SemanticParser implements ISemanticParser {
 				}
 			}
 
-		} else {
+		} else
+
+		{
 
 			if (rule.startsWith("UPDATEVALUE:")) {
-				if (elementValueSet.hasElementValuesByName(se)) {
-					for (IElementValue value : elementValueSet.getElementValuesByName(se)) {
-						getSemanticInterpreter().update(se.getName() + "_UPDATEVALUE", value);
+				if (elementValueSet.hasElementValuesByName(computedInSE)) {
+					for (IElementValue value : elementValueSet.getElementValuesByName(computedInSE)) {
+						getSemanticInterpreter().update(computedInSE.getName() + "_UPDATEVALUE", value);
 					}
 				}
 			} else {
-				if (se.getParent() != null) {
-					XElementValue computedInElement = new XElementValue(se, elementValueSet);
+				if (computedInSE.getParent() != null) {
+					XElementValue computedInElement = new XElementValue(computedInSE, elementValueSet);
 					computedInElement.setParent(parentElement);
 					parentElement.addChild(computedInElement);
-					getSemanticInterpreter().update(se.getName() + "_COMPUTED", computedInElement);
+					getSemanticInterpreter().update(computedInSE.getName() + "_COMPUTED", computedInElement);
 				}
 
 			}
@@ -1418,7 +1551,7 @@ public class SemanticParser implements ISemanticParser {
 			IElementValue elementValue = iterator.next();
 			if (elementValue.getSemanticElement() != null) {
 
-				normalizeSemanticContainers(elementValueSet, elementValue, iterator, containers);
+				normalizeSemanticContainers(elementValueSet, elementValue, iterator);
 			}
 		}
 
