@@ -149,7 +149,8 @@ public class SemanticInterpreter {
 						sb.append(function.toString());
 					}
 
-				} else if (semanticElement.isComputedOut()) {
+				}
+				if (semanticElement.isComputedOut()) {
 
 					String computedOutExpression = semanticElement.getComputedOutValue().getExpression();
 
