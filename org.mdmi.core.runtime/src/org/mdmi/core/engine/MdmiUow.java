@@ -904,6 +904,23 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.trace("singles : " + watch.toSplitString());
 
+		logger.info("=== sourcetotarget map dump ===");
+		for (IElementValue source : sourcetotarget.keySet()) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("source=").append(source.getName()).append("(").append(source.getUniqueId()).append(") -> targets=[");
+			boolean first = true;
+			for (IElementValue target : sourcetotarget.get(source)) {
+				if (!first) {
+					sb.append(", ");
+				}
+				sb.append(target.getName()).append("(").append(target.getUniqueId()).append(")");
+				first = false;
+			}
+			sb.append("]");
+			logger.info(sb.toString());
+		}
+		logger.info("=== end sourcetotarget map dump ===");
+
 		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
 			if (targettosource.containsKey(targetElementValue)) {
 				if (targetElementValue.getParent() == null) {
@@ -921,11 +938,19 @@ public class MdmiUow implements Runnable {
 
 										if (targetElementValue.getSemanticElement().getUniqueId().equals(
 											child.getUniqueId())) {
+											logger.info(
+												"ADD CHILD (QUALIFIER) parent=" + targetParent.getName() + "(" +
+														targetParent.getUniqueId() + ") child=" + targetElementValue.getName() +
+													"(" + targetElementValue.getUniqueId() + ")");
 											targetParent.addChild(targetElementValue);
 										}
 									}
 								} else {
 									if (!semanticReferences.contains(targetParent.getSemanticElement().getUniqueId())) {
+										logger.info(
+											"ADD CHILD parent=" + targetParent.getName() + "(" + targetParent.getUniqueId() +
+													") child=" + targetElementValue.getName() + "(" + targetElementValue.getUniqueId() +
+													")");
 										targetParent.addChild(targetElementValue);
 									}
 								}
