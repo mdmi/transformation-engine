@@ -904,25 +904,23 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.trace("singles : " + watch.toSplitString());
 
-		if (logger.isTraceEnabled()) {
-			logger.trace("=== sourcetotarget map dump ===");
-			for (IElementValue source : sourcetotarget.keySet()) {
-				StringBuilder sb = new StringBuilder();
-				sb.append("source=").append(source.getName()).append("(").append(source.getUniqueId()).append(
-					") -> targets=[");
-				boolean first = true;
-				for (IElementValue target : sourcetotarget.get(source)) {
-					if (!first) {
-						sb.append(", ");
-					}
-					sb.append(target.getName()).append("(").append(target.getUniqueId()).append(")");
-					first = false;
+		logger.trace("=== sourcetotarget map dump ===");
+		for (IElementValue source : sourcetotarget.keySet()) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("source=").append(source.getName()).append("(").append(source.getUniqueId()).append(
+				") -> targets=[");
+			boolean first = true;
+			for (IElementValue target : sourcetotarget.get(source)) {
+				if (!first) {
+					sb.append(", ");
 				}
-				sb.append("]");
-				logger.trace(sb.toString());
+				sb.append(target.getName()).append("(").append(target.getUniqueId()).append(")");
+				first = false;
 			}
-			logger.trace("=== end sourcetotarget map dump ===");
+			sb.append("]");
+			logger.info(sb.toString());
 		}
+		logger.trace("=== end sourcetotarget map dump ===");
 
 		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
 			if (targettosource.containsKey(targetElementValue)) {
@@ -1006,7 +1004,7 @@ public class MdmiUow implements Runnable {
 		}
 
 		watch.split();
-		logger.info("containers : " + watch.toSplitString());
+		logger.trace("containers : " + watch.toSplitString());
 
 		ArrayList<IElementValue> tobedeleted = new ArrayList<>();
 
@@ -1151,23 +1149,23 @@ public class MdmiUow implements Runnable {
 			transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties,
 			transferInfo.targetValues);
 		watch.split();
-		logger.info("Split processOutboundTargetMessage updateTargetSemanticModel : " + watch.toSplitString());
+		logger.trace("Split processOutboundTargetMessage updateTargetSemanticModel : " + watch.toSplitString());
 
 		processTargetSemanticModel();
 		watch.split();
-		logger.info("Split processOutboundTargetMessage processTargetSemanticModel : " + watch.toSplitString());
+		logger.trace("Split processOutboundTargetMessage processTargetSemanticModel : " + watch.toSplitString());
 
 		if (trgSyntaxModel != null) {
 			trgSemProv.updateSyntacticModel(
 				transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties);
 			watch.split();
-			logger.info("Split processOutboundTargetMessage updateSyntacticModel : " + watch.toSplitString());
+			logger.trace("Split processOutboundTargetMessage updateSyntacticModel : " + watch.toSplitString());
 
 		} else {
 			trgSyntaxModel = trgSemProv.createNewSyntacticModel(
 				transferInfo.targetModel.getModel(), trgSemanticModel, transferInfo.targetProperties);
 			watch.split();
-			logger.info("Split processOutboundTargetMessage createNewSyntacticModel : " + watch.toSplitString());
+			logger.trace("Split processOutboundTargetMessage createNewSyntacticModel : " + watch.toSplitString());
 
 		}
 
@@ -1213,7 +1211,7 @@ public class MdmiUow implements Runnable {
 			transferInfo.targetModel.getModel(), transferInfo.targetMessage, trgSyntaxModel, runtimeComment.toString());
 
 		watch.split();
-		logger.info("Split processOutboundTargetMessage serialize : " + watch.toSplitString());
+		logger.trace("Split processOutboundTargetMessage serialize : " + watch.toSplitString());
 
 	}
 

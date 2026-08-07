@@ -130,6 +130,66 @@ public class SemanticParser implements ISemanticParser {
 			}
 		}
 		logSplit(watch, "set parents");
+
+		// Iterate over a snapshot because XElementValue.clone(true) adds the clone to the
+		// owner ElementValueSet, which would modify the underlying list during traversal.
+		List<IElementValue> valuesToProcess = new ArrayList<>(eset.getAllElementValues());
+		ListIterator<IElementValue> iterator = valuesToProcess.listIterator();
+		while (iterator.hasNext()) {
+			IElementValue ses = iterator.next();
+			if (ses.getSemanticElement() != null) {
+				SemanticElementRelationship cascade = ses.getSemanticElement().getRelationshipByName("CASCADE");
+				if (cascade != null) {
+					if (cascade.getRelatedSemanticElement() != null) {
+						boolean found = false;
+						IElementValue theParent = ses.getParent();
+						while (!found) {
+							if (theParent == null) {
+								break;
+							}
+							XElementValue target = null;
+
+							for (IElementValue ced : theParent.getChildren()) {
+
+								if (ced.getSemanticElement() != null) {
+									if (ced.getSemanticElement().getName().equals(
+										cascade.getRelatedSemanticElement().getName())) {
+										target = (XElementValue) ced;
+										XElementValue clone = ((XElementValue) ses).clone(true);
+										target.addChild(clone);
+										clone.setParent(target);
+										found = true;
+
+									}
+
+								}
+
+							}
+
+							if (!found) {
+								// found = true;
+								// XElementValue clone = ((XElementValue) ses).clone(true);
+								// target.addChild(clone);
+								// clone.setParent(ses);
+								// } else {
+								theParent = theParent.getParent();
+							} else {
+								System.err.println(ses.getSemanticElement().getName());
+								ses.getOwner().getAllElementValues().remove(ses);
+								// ses = null;
+								// EcoreUtil.delete(ses);
+							}
+
+						}
+
+					}
+
+				}
+
+			}
+
+		}
+
 	}
 
 	/* --- Helpers --- */
@@ -1071,6 +1131,20 @@ public class SemanticParser implements ISemanticParser {
 				parentValue.addChild(computedInElement);
 				computedInElement.setParent(parentValue);
 				for (IElementValue rollupValue : valuesByParent.get(parentValue)) {
+					// if (rollupValue.getSemanticElement().getBusinessRules() != null &&
+					// !rollupValue.getSemanticElement().getBusinessRules().isEmpty()) {
+					// System.err.println(rollupValue.getSemanticElement().getBusinessRules().get(0));
+					// SemanticElementBusinessRule x = rollupValue.getSemanticElement().getBusinessRules().get(0);
+					// String fromto = x.getRule();
+					//
+					// XValue foo = (XValue) rollupValue.getXValue();
+					// computedInElement.getXValue().addValue(
+					// (fromto.length > 1
+					// ? fromto[1]
+					// : fromto[0]),
+					// foo.getValueByName(fromto[0]));
+					// }
+
 					if (rollupValue.getXValue().getValue() != null) {
 						if (rollupValue.getXValue().getValue() instanceof String) {
 							String rollupRule = rulesBySemanticElement.get(rollupValue.getSemanticElement());
