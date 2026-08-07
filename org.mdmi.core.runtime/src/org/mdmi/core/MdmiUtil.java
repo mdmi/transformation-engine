@@ -50,7 +50,7 @@ public class MdmiUtil {
 
 		Map<String, MDMIBusinessElementReference> right = trgMessageModel.getBusinessElementHashMap();
 
-		Equivalence<MDMIBusinessElementReference> valueEquivalence = new Equivalence<MDMIBusinessElementReference>() {
+		Equivalence<MDMIBusinessElementReference> valueEquivalence = new Equivalence<>() {
 
 			@Override
 			protected boolean doEquivalent(MDMIBusinessElementReference a, MDMIBusinessElementReference b) {
@@ -67,7 +67,7 @@ public class MdmiUtil {
 		MapDifference<String, MDMIBusinessElementReference> differences = Maps.difference(
 			left, right, valueEquivalence);
 
-		Predicate<MDMIBusinessElementReference> predicate = new Predicate<MDMIBusinessElementReference>() {
+		Predicate<MDMIBusinessElementReference> predicate = new Predicate<>() {
 
 			@Override
 			public boolean apply(MDMIBusinessElementReference input) {

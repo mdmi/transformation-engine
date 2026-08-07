@@ -103,7 +103,7 @@ public class MDMIAdapterFactory extends AdapterFactoryImpl {
 	 *
 	 * @generated
 	 */
-	protected MDMISwitch<Adapter> modelSwitch = new MDMISwitch<Adapter>() {
+	protected MDMISwitch<Adapter> modelSwitch = new MDMISwitch<>() {
 		@Override
 		public Adapter caseMessageModel(MessageModel object) {
 			return createMessageModelAdapter();
