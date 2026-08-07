@@ -350,7 +350,7 @@ public class MLSyntacticParser implements ISyntacticParser {
 					}
 				}
 
-				Consumer<? super Entry<String, String>> appendtobuffer = new Consumer<>() {
+				Consumer<? super Entry<String, String>> appendtobuffer = new Consumer<Entry<String, String>>() {
 
 					@Override
 					public void accept(Entry<String, String> t) {
@@ -414,7 +414,7 @@ public class MLSyntacticParser implements ISyntacticParser {
 					}
 				}
 
-				Consumer<? super Entry<String, String>> appendtobuffer = new Consumer<>() {
+				Consumer<? super Entry<String, String>> appendtobuffer = new Consumer<Entry<String, String>>() {
 
 					@Override
 					public void accept(Entry<String, String> t) {

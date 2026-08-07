@@ -286,7 +286,7 @@ public class MDMIUtil {
 			}
 		}
 
-		Comparator<? super Node> rimCompare = new Comparator<>() {
+		Comparator<? super Node> rimCompare = new Comparator<Node>() {
 
 			public int compare(Node o1, Node o2) {
 				return Integer.valueOf(o1.getDescription()).compareTo(Integer.valueOf(o2.getDescription()));

@@ -1,0 +1,110 @@
+{
+	"patient": {
+		
+		"labresults": {
+			
+			
+				"test": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}
+				,
+                "testName": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}
+                ,
+                "deviceID": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}
+                   ,
+                "performaingSite": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}  
+                    
+				     ,
+                "specimentType": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}  
+
+                       ,
+                "abnormalFlag": 
+					{
+						"text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}  
+				
+                
+
+			}
+,
+		"encounters": {
+			"encounter": [
+				{
+					"Status": "completed"
+				}
+			]
+		},
+		"demographics": [
+			{
+				"birthSex": [
+					{
+						"Text": "",
+						"codings": [
+							{
+								"Code": "M"
+							}
+						]
+					}
+				]
+			},
+			{
+				"birthDate": "1960-03-03"
+			},
+			{
+				"race": [
+					{
+						"Text": "Black or African American",
+						"codings": [
+							{
+								"Code": "2054-5"
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}

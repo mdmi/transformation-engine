@@ -196,7 +196,7 @@ public class SemanticParser implements ISemanticParser {
 
 	private void logSplit(StopWatch watch, String phase) {
 		watch.split();
-		logger.trace("buildSemanticModel - {} {}", phase, watch.toSplitString());
+		logger.debug("buildSemanticModel - {} {}", phase, watch.toSplitString());
 	}
 
 	private boolean isContainerWithParent(IElementValue ses) {
@@ -896,7 +896,7 @@ public class SemanticParser implements ISemanticParser {
 	 */
 	void normalizeSemanticContainers(ElementValueSet elementValueSet, IElementValue parent,
 			ListIterator<IElementValue> iterator) {
-		logger.trace(
+		logger.debug(
 			"=== normalizeSemanticContainers START parent=" + parent.getName() + "(" + parent.getUniqueId() +
 					") semanticElement=" + parent.getSemanticElement().getName() + " childrenCount=" +
 					parent.getChildren().size());
@@ -907,7 +907,7 @@ public class SemanticParser implements ISemanticParser {
 			SemanticElement expectedParentSemantic = childSemantic.getParent();
 			SemanticElement actualParentSemantic = parent.getSemanticElement();
 
-			logger.trace(
+			logger.debug(
 				"CHECK CHILD child=" + child.getName() + "(" + child.getUniqueId() + ") childSemantic=" +
 						childSemantic.getName() + " expectedParentSemantic=" + (expectedParentSemantic != null
 								? expectedParentSemantic.getName()
@@ -915,12 +915,12 @@ public class SemanticParser implements ISemanticParser {
 						" actualParentSemantic=" + actualParentSemantic.getName());
 
 			if (expectedParentSemantic == null) {
-				logger.trace("  -> expectedParentSemantic is null, skipping child");
+				logger.debug("  -> expectedParentSemantic is null, skipping child");
 				continue;
 			}
 
 			if (!expectedParentSemantic.getName().equals(actualParentSemantic.getName())) {
-				logger.trace(
+				logger.debug(
 					"  -> MISMATCH: child semantic parent '" + expectedParentSemantic.getName() +
 							"' does not match current parent '" + actualParentSemantic.getName() + "'");
 
@@ -934,23 +934,23 @@ public class SemanticParser implements ISemanticParser {
 
 				}
 				if (targetElementValue == null) {
-					logger.trace(" -> CONTAINER NOT FOUND: creating new container for " + containerKey);
+					logger.debug(" -> CONTAINER NOT FOUND: creating new container for " + containerKey);
 					targetElementValue = new XElementValue(expectedParentSemantic, elementValueSet, iterator);
 					// containers.put(containerKey, x);
 					parent.addChild(targetElementValue);
 					targetElementValue.setParent(parent);
-					logger.trace(
+					logger.debug(
 						" -> CONTAINER CREATED: parent=" + parent.getName() + "(" + parent.getUniqueId() +
 								") added container=" + targetElementValue.getName() + "(" +
 								targetElementValue.getUniqueId() + ")");
 					// } else {
-					// logger.trace(" -> CONTAINER FOUND: existing container=" + containerKey + " uniqueId=" +
+					// logger.debug(" -> CONTAINER FOUND: existing container=" + containerKey + " uniqueId=" +
 					// containers.get(containerKey).getUniqueId());
 				}
 
 				// IElementValue targetElementValue; // = NUcontainers.get(containerKey);
 
-				logger.trace(
+				logger.debug(
 					"  -> MOVE CHILD: from parent=" + parent.getName() + "(" + parent.getUniqueId() +
 							") to container=" + targetElementValue.getName() + "(" + targetElementValue.getUniqueId() +
 							") child=" + child.getName() + "(" + child.getUniqueId() + ")");
@@ -959,19 +959,19 @@ public class SemanticParser implements ISemanticParser {
 				child.setParent(targetElementValue);
 				remove.add(child);
 			} else {
-				logger.trace("  -> MATCH: child stays under parent " + actualParentSemantic.getName());
+				logger.debug("  -> MATCH: child stays under parent " + actualParentSemantic.getName());
 			}
 		}
 
-		logger.trace("=== remove loop count=" + remove.size());
+		logger.debug("=== remove loop count=" + remove.size());
 		for (IElementValue r : remove) {
-			logger.trace(
+			logger.debug(
 				"REMOVE child from parent=" + parent.getName() + "(" + parent.getUniqueId() + ") child=" + r.getName() +
 						"(" + r.getUniqueId() + ")");
 			parent.removeChild(r);
 		}
 
-		logger.trace(
+		logger.debug(
 			"=== normalizeSemanticContainers END parent=" + parent.getName() + "(" + parent.getUniqueId() +
 					") childrenCount=" + parent.getChildren().size());
 	}
@@ -1681,7 +1681,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace(
+		logger.debug(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers : " +
 					watch.toSplitString());
 
@@ -1788,7 +1788,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace(
+		logger.debug(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers  process : " +
 					watch.toSplitString());
 
@@ -1821,7 +1821,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.trace(
+		logger.debug(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn rootComputedElements  process : " +
 					watch.toSplitString());
 

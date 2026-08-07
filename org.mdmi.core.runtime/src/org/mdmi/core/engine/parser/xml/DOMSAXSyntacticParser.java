@@ -513,7 +513,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				return text.toString().trim();
 			}
 
-			public static Stack<String> extractElementsFromXPath(String xpath) {
+			public Stack<String> extractElementsFromXPath(String xpath) {
 				if (xpath == null || xpath.isEmpty())
 					return new Stack<>();
 
@@ -758,7 +758,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				return results;
 			}
 
-			public static String getXPath(org.w3c.dom.Node node) {
+			public String getXPath(org.w3c.dom.Node node) {
 				if (node == null) {
 					return null;
 				}
@@ -785,7 +785,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				return path.toString();
 			}
 
-			private static int getNodeIndex(org.w3c.dom.Node node) {
+			private int getNodeIndex(org.w3c.dom.Node node) {
 				int index = 1;
 				org.w3c.dom.Node prevSibling = node.getPreviousSibling();
 				while (prevSibling != null) {
@@ -798,7 +798,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 				return index;
 			}
 
-			public static Document createDocumentFromNode(org.w3c.dom.Node node) throws Exception {
+			public Document createDocumentFromNode(org.w3c.dom.Node node) throws Exception {
 				if (node == null) {
 					throw new IllegalArgumentException("Node cannot be null");
 				}
@@ -816,7 +816,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 			/**
 			 * Converts a Document (or Node) to a formatted XML String.
 			 */
-			public static String toXmlString(org.w3c.dom.Node node) throws Exception {
+			public String toXmlString(org.w3c.dom.Node node) throws Exception {
 				TransformerFactory tf = TransformerFactory.newInstance();
 				Transformer transformer = tf.newTransformer();
 
@@ -1376,7 +1376,7 @@ public class DOMSAXSyntacticParser implements ISyntacticParser {
 
 		LinkedList<YNode> ynodes = bag.getYNodes();
 
-		Comparator<YNode> compare = new Comparator<>() {
+		Comparator<YNode> compare = new Comparator<YNode>() {
 
 			@Override
 			public int compare(YNode o1, YNode o2) {
