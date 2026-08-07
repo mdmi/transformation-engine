@@ -155,20 +155,29 @@ public class SemanticParser implements ISemanticParser {
 									if (ced.getSemanticElement().getName().equals(
 										cascade.getRelatedSemanticElement().getName())) {
 										target = (XElementValue) ced;
-										break;
+										XElementValue clone = ((XElementValue) ses).clone(true);
+										target.addChild(clone);
+										clone.setParent(target);
+										found = true;
+
 									}
 
 								}
 
 							}
 
-							if (target != null) {
-								found = true;
-								XElementValue clone = ((XElementValue) ses).clone(true);
-								target.addChild(clone);
-								clone.setParent(ses);
-							} else {
+							if (!found) {
+								// found = true;
+								// XElementValue clone = ((XElementValue) ses).clone(true);
+								// target.addChild(clone);
+								// clone.setParent(ses);
+								// } else {
 								theParent = theParent.getParent();
+							} else {
+								System.err.println(ses.getSemanticElement().getName());
+								ses.getOwner().getAllElementValues().remove(ses);
+								// ses = null;
+								// EcoreUtil.delete(ses);
 							}
 
 						}
@@ -187,7 +196,7 @@ public class SemanticParser implements ISemanticParser {
 
 	private void logSplit(StopWatch watch, String phase) {
 		watch.split();
-		logger.info("buildSemanticModel - {} {}", phase, watch.toSplitString());
+		logger.trace("buildSemanticModel - {} {}", phase, watch.toSplitString());
 	}
 
 	private boolean isContainerWithParent(IElementValue ses) {
@@ -887,7 +896,7 @@ public class SemanticParser implements ISemanticParser {
 	 */
 	void normalizeSemanticContainers(ElementValueSet elementValueSet, IElementValue parent,
 			ListIterator<IElementValue> iterator) {
-		logger.info(
+		logger.trace(
 			"=== normalizeSemanticContainers START parent=" + parent.getName() + "(" + parent.getUniqueId() +
 					") semanticElement=" + parent.getSemanticElement().getName() + " childrenCount=" +
 					parent.getChildren().size());
@@ -898,7 +907,7 @@ public class SemanticParser implements ISemanticParser {
 			SemanticElement expectedParentSemantic = childSemantic.getParent();
 			SemanticElement actualParentSemantic = parent.getSemanticElement();
 
-			logger.info(
+			logger.trace(
 				"CHECK CHILD child=" + child.getName() + "(" + child.getUniqueId() + ") childSemantic=" +
 						childSemantic.getName() + " expectedParentSemantic=" + (expectedParentSemantic != null
 								? expectedParentSemantic.getName()
@@ -906,12 +915,12 @@ public class SemanticParser implements ISemanticParser {
 						" actualParentSemantic=" + actualParentSemantic.getName());
 
 			if (expectedParentSemantic == null) {
-				logger.info("  -> expectedParentSemantic is null, skipping child");
+				logger.trace("  -> expectedParentSemantic is null, skipping child");
 				continue;
 			}
 
 			if (!expectedParentSemantic.getName().equals(actualParentSemantic.getName())) {
-				logger.info(
+				logger.trace(
 					"  -> MISMATCH: child semantic parent '" + expectedParentSemantic.getName() +
 							"' does not match current parent '" + actualParentSemantic.getName() + "'");
 
@@ -925,23 +934,23 @@ public class SemanticParser implements ISemanticParser {
 
 				}
 				if (targetElementValue == null) {
-					logger.info(" -> CONTAINER NOT FOUND: creating new container for " + containerKey);
+					logger.trace(" -> CONTAINER NOT FOUND: creating new container for " + containerKey);
 					targetElementValue = new XElementValue(expectedParentSemantic, elementValueSet, iterator);
 					// containers.put(containerKey, x);
 					parent.addChild(targetElementValue);
 					targetElementValue.setParent(parent);
-					logger.info(
+					logger.trace(
 						" -> CONTAINER CREATED: parent=" + parent.getName() + "(" + parent.getUniqueId() +
 								") added container=" + targetElementValue.getName() + "(" +
 								targetElementValue.getUniqueId() + ")");
 					// } else {
-					// logger.info(" -> CONTAINER FOUND: existing container=" + containerKey + " uniqueId=" +
+					// logger.trace(" -> CONTAINER FOUND: existing container=" + containerKey + " uniqueId=" +
 					// containers.get(containerKey).getUniqueId());
 				}
 
 				// IElementValue targetElementValue; // = NUcontainers.get(containerKey);
 
-				logger.info(
+				logger.trace(
 					"  -> MOVE CHILD: from parent=" + parent.getName() + "(" + parent.getUniqueId() +
 							") to container=" + targetElementValue.getName() + "(" + targetElementValue.getUniqueId() +
 							") child=" + child.getName() + "(" + child.getUniqueId() + ")");
@@ -950,19 +959,19 @@ public class SemanticParser implements ISemanticParser {
 				child.setParent(targetElementValue);
 				remove.add(child);
 			} else {
-				logger.info("  -> MATCH: child stays under parent " + actualParentSemantic.getName());
+				logger.trace("  -> MATCH: child stays under parent " + actualParentSemantic.getName());
 			}
 		}
 
-		logger.info("=== remove loop count=" + remove.size());
+		logger.trace("=== remove loop count=" + remove.size());
 		for (IElementValue r : remove) {
-			logger.info(
+			logger.trace(
 				"REMOVE child from parent=" + parent.getName() + "(" + parent.getUniqueId() + ") child=" + r.getName() +
 						"(" + r.getUniqueId() + ")");
 			parent.removeChild(r);
 		}
 
-		logger.info(
+		logger.trace(
 			"=== normalizeSemanticContainers END parent=" + parent.getName() + "(" + parent.getUniqueId() +
 					") childrenCount=" + parent.getChildren().size());
 	}
@@ -1672,7 +1681,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers : " +
 					watch.toSplitString());
 
@@ -1779,7 +1788,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn computedElementsContainers  process : " +
 					watch.toSplitString());
 
@@ -1812,7 +1821,7 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		watch.split();
-		logger.info(
+		logger.trace(
 			"Split processOutboundTargetMessage updateTargetSemanticModel updateTargetSemanticModel walkComputedIn rootComputedElements  process : " +
 					watch.toSplitString());
 
