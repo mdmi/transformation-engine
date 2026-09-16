@@ -10,6 +10,8 @@ import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.mdmi.Bag;
 import org.mdmi.ConversionRule;
+import org.mdmi.DTCStructured;
+import org.mdmi.Field;
 import org.mdmi.MDMIBusinessElementReference;
 import org.mdmi.MDMIDatatype;
 import org.mdmi.MDMIExpression;
@@ -94,6 +96,7 @@ public class XcnToContainerEnricher {
 		int converted = 0;
 		int rollups = 0;
 		int identifiers = 0;
+		int children = 0;
 		for (MessageModel model : group.getModels()) {
 			SemanticElementSet elementSet = model.getElementSet();
 			if (elementSet == null) {
@@ -104,13 +107,13 @@ public class XcnToContainerEnricher {
 					se.setDatatype(containerType);
 					converted++;
 					System.out.println("  " + se.getName() + " -> Container");
-					ensureChildren(se, elementSet);
 				}
-			}
-			for (SemanticElement se : new ArrayList<>(elementSet.getSemanticElements())) {
-				if (se.getDatatype() == containerType && isXcnContainer(se) && !hasChild(se, "XCNName")) {
-					addXcnNameRollup(se, elementSet);
-					rollups++;
+				if (se.getDatatype() == containerType && isXcnContainer(se)) {
+					children += ensureChildren(se, elementSet, xcnType);
+					if (!hasChild(se, "XCNName")) {
+						addXcnNameRollup(se, elementSet);
+						rollups++;
+					}
 				}
 			}
 			if (model.getSyntaxModel() != null && model.getSyntaxModel().getRoot() instanceof Bag) {
@@ -118,13 +121,13 @@ public class XcnToContainerEnricher {
 			}
 		}
 
-		if (converted > 0 || rollups > 0 || identifiers > 0) {
+		if (converted > 0 || rollups > 0 || identifiers > 0 || children > 0) {
 			Map<Object, Object> options = new HashMap<>();
 			options.put(XMLResource.OPTION_FLUSH_THRESHOLD, Integer.valueOf(0x01000000));
 			options.put(XMLResource.OPTION_USE_FILE_BUFFER, Boolean.TRUE);
 			resource.save(options);
 			System.out.println("  Saved " + converted + " converted, " + rollups + " XCNName rollup(s), " + identifiers +
-				" PractitionerIdentifier mapping(s) in " + file.getName());
+				" PractitionerIdentifier mapping(s), " + children + " child element(s) in " + file.getName());
 		} else {
 			System.out.println("  No changes");
 		}
@@ -170,9 +173,9 @@ public class XcnToContainerEnricher {
 			}
 			SemanticElementRelationship rel = MDMIFactory.eINSTANCE.createSemanticElementRelationship();
 			rel.setName(child.getName());
-			String rule = "value.getXValue().addValue('" + field + "', '<<LOCALSEMANTICVALUE>>' );";
+			String rule = "value.getXValue().addValue('" + field + "', '<<LOCALSEMANTICVALUE>>>' );";
 			if ("family".equals(field)) {
-				rule = "value.getXValue().addValue('family', '<<LOCALSEMANTICVALUE>>' ).getValue('FN1');";
+				rule = "value.getXValue().addValue('family', '<<LOCALSEMANTICVALUE>>>' ).getValue('FN1');";
 			}
 			rel.setRule(rule);
 			rel.setContext(rollup);
@@ -202,7 +205,7 @@ public class XcnToContainerEnricher {
 			if ("XCN.1".equals(node.getLocation())) {
 				SemanticElement se = node.getSemanticElement();
 				if (se == null) {
-					se = createSemanticElement(node);
+					se = createSemanticElement(node, stringType);
 					se.setName("PractitionerIdentifier");
 					elementSet.getSemanticElements().add(se);
 					SemanticElement parentSe = bag.getSemanticElement();
@@ -261,32 +264,87 @@ public class XcnToContainerEnricher {
 		return null;
 	}
 
-	private static void ensureChildren(SemanticElement se, SemanticElementSet elementSet) {
+	private static int ensureChildren(SemanticElement se, SemanticElementSet elementSet, MDMIDatatype fieldSource) {
 		Node syntaxNode = se.getSyntaxNode();
 		if (!(syntaxNode instanceof Bag)) {
-			return;
+			return 0;
 		}
+		int changed = 0;
 		for (Node child : ((Bag) syntaxNode).getNodes()) {
+			MDMIDatatype childType = resolveFieldDatatype(fieldSource, child);
 			SemanticElement childSe = child.getSemanticElement();
 			if (childSe == null) {
-				childSe = createSemanticElement(child);
+				childSe = createSemanticElement(child, childType);
 				elementSet.getSemanticElements().add(childSe);
+				changed++;
+			} else if (childType != containerType && childSe.getDatatype() == containerType) {
+				childSe.setDatatype(childType);
+				changed++;
 			}
 			if (!se.getChildren().contains(childSe)) {
 				se.getChildren().add(childSe);
+				changed++;
 			}
-			ensureChildren(childSe, elementSet);
+			if (child instanceof Bag) {
+				changed += pruneDeep((Bag) child, se, elementSet);
+			}
 		}
+		return changed;
 	}
 
-	private static SemanticElement createSemanticElement(Node node) {
+	private static int pruneDeep(Bag bag, SemanticElement container, SemanticElementSet elementSet) {
+		int changed = 0;
+		for (Node node : bag.getNodes()) {
+			if (node instanceof Bag) {
+				changed += pruneDeep((Bag) node, container, elementSet);
+			}
+			SemanticElement deepSe = node.getSemanticElement();
+			if (deepSe == null) {
+				continue;
+			}
+			if (isGenerated(deepSe)) {
+				node.setSemanticElement(null);
+				SemanticElement parent = deepSe.getParent();
+				if (parent != null) {
+					parent.getChildren().remove(deepSe);
+				}
+				elementSet.getSemanticElements().remove(deepSe);
+				changed++;
+			} else if (!container.getChildren().contains(deepSe)) {
+				container.getChildren().add(deepSe);
+				changed++;
+			}
+		}
+		return changed;
+	}
+
+	private static boolean isGenerated(SemanticElement se) {
+		return "99999999".equals(se.getDescription()) &&
+			"LOCAL".equals(se.getElementType()) &&
+			se.getMapFromMdmi().isEmpty() && se.getMapToMdmi().isEmpty() &&
+			se.getRelationships().isEmpty() && se.getBusinessRules().isEmpty() &&
+			se.getDataRules().isEmpty() && se.getComputedValue() == null;
+	}
+
+	private static MDMIDatatype resolveFieldDatatype(MDMIDatatype fieldSource, Node node) {
+		if (fieldSource instanceof DTCStructured && node.getFieldName() != null) {
+			for (Field field : ((DTCStructured) fieldSource).getFields()) {
+				if (node.getFieldName().equals(field.getName())) {
+					return field.getDatatype();
+				}
+			}
+		}
+		return node instanceof Bag
+				? containerType
+				: stringType;
+	}
+
+	private static SemanticElement createSemanticElement(Node node, MDMIDatatype datatype) {
 		SemanticElement se = MDMIFactory.eINSTANCE.createSemanticElement();
 		se.setName(node.getName());
 		se.setDescription("99999999");
 		se.setElementType("LOCAL");
-		se.setDatatype(node instanceof Bag
-				? containerType
-				: stringType);
+		se.setDatatype(datatype);
 		node.setSemanticElement(se);
 		return se;
 	}
