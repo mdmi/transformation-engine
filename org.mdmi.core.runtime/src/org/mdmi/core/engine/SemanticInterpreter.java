@@ -51,8 +51,24 @@ public class SemanticInterpreter {
 
 	public HashMap<String, Exception> exceptions = new HashMap<>();
 
+	public static String getFunctionName1(SemanticElement from, SemanticElement to) {
+
+		return from.getName() + from.getUniqueId() + "_to_" + to.getName() + to.getUniqueId() + "RollUp";
+	}
+
 	public static String getFunctionName(SemanticElement from, SemanticElement to) {
-		return from.getName() + "_to_" + to.getName() + "RollUp";
+		String rawName = from.getName() + from.getUniqueId() + "_to_" + to.getName() + to.getUniqueId() + "RollUp";
+
+		// Replace characters that are not valid JavaScript identifier characters
+		String safeName = rawName.replaceAll("[^a-zA-Z0-9_$]", "_");
+
+		// Ensure the first character is valid for a JavaScript identifier
+		if (!safeName.isEmpty() && !Character.isLetter(safeName.charAt(0)) && safeName.charAt(0) != '_' &&
+				safeName.charAt(0) != '$') {
+			safeName = "_" + safeName;
+		}
+
+		return safeName;
 	}
 
 	/**
@@ -101,6 +117,7 @@ public class SemanticInterpreter {
 
 								function.append(rollupRule.replace("'<<LOCALSEMANTICVALUE>>>'", "param1"));
 								function.append("}");
+
 								sb.append(function.toString());
 							}
 						}

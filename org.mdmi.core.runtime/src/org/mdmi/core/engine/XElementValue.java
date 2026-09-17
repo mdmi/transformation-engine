@@ -81,10 +81,6 @@ public class XElementValue implements IElementValue {
 			throw new IllegalArgumentException("Null argument!");
 		}
 
-		if ("LocalOrganizationPrimaryInsContainerXXX".equals(semanticElement.getName())) {
-			System.err.println("aaaa");
-		}
-
 		m_semanticElement = semanticElement;
 		m_children = new LinkedList<>();
 		m_relations = new ArrayList<>();
@@ -126,9 +122,6 @@ public class XElementValue implements IElementValue {
 			ListIterator<IElementValue> iterator) {
 		if (semanticElement == null) {
 			throw new IllegalArgumentException("Null argument!");
-		}
-		if ("LocalOrganizationPrimaryInsContainerXXX".equals(semanticElement.getName())) {
-			System.err.println("aaaa");
 		}
 
 		m_semanticElement = semanticElement;

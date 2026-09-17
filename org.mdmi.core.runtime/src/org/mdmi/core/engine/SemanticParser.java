@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
 
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -174,7 +173,6 @@ public class SemanticParser implements ISemanticParser {
 								// } else {
 								theParent = theParent.getParent();
 							} else {
-								System.err.println(ses.getSemanticElement().getName());
 								ses.getOwner().getAllElementValues().remove(ses);
 								// ses = null;
 								// EcoreUtil.delete(ses);
@@ -1144,47 +1142,51 @@ public class SemanticParser implements ISemanticParser {
 					// : fromto[0]),
 					// foo.getValueByName(fromto[0]));
 					// }
+					Object theValue = rollupValue.getXValue().getValue();
+					if (theValue != null) {
 
-					if (rollupValue.getXValue().getValue() != null) {
-						if (rollupValue.getXValue().getValue() instanceof String) {
+						if (theValue instanceof String) {
 							String rollupRule = rulesBySemanticElement.get(rollupValue.getSemanticElement());
-							if (!StringUtils.isEmpty(rollupRule)) {
-								logger.trace("Setting value to rollup " + (String) rollupValue.getXValue().getValue());
-								if (rollupRule.startsWith("SEMANTICROLLUPFUNCTION:")) {
-									switch (parseFunctionName(rollupRule)) {
-										case "setDocumentHomeId":
-											setDocumentHomeId(
-												computedInElement, StringEscapeUtils.escapeEcmaScript(
-													(String) rollupValue.getXValue().getValue()));
-											break;
-										case "setRepositoryId":
-											setRepositoryId(
-												computedInElement, StringEscapeUtils.escapeEcmaScript(
-													(String) rollupValue.getXValue().getValue()));
-											break;
-										case "setDocumentId":
-											setDocumentId(
-												computedInElement, StringEscapeUtils.escapeEcmaScript(
-													(String) rollupValue.getXValue().getValue()));
-											break;
+							// if (!StringUtils.isEmpty(rollupRule)) {
+							// logger.trace("Setting value to rollup " + (String) rollupValue.getXValue().getValue());
+							// if (rollupRule.startsWith("SEMANTICROLLUPFUNCTION:")) {
+							// switch (parseFunctionName(rollupRule)) {
+							// case "setDocumentHomeId":
+							// setDocumentHomeId(
+							// computedInElement, StringEscapeUtils.escapeEcmaScript(
+							// (String) rollupValue.getXValue().getValue()));
+							// break;
+							// case "setRepositoryId":
+							// setRepositoryId(
+							// computedInElement, StringEscapeUtils.escapeEcmaScript(
+							// (String) rollupValue.getXValue().getValue()));
+							// break;
+							// case "setDocumentId":
+							// setDocumentId(
+							// computedInElement, StringEscapeUtils.escapeEcmaScript(
+							// (String) rollupValue.getXValue().getValue()));
+							// break;
+							//
+							// case "setDocumentCode":
+							// setDocumentCode(
+							// computedInElement, StringEscapeUtils.escapeEcmaScript(
+							// (String) rollupValue.getXValue().getValue()));
+							// break;
+							//
+							// }
 
-										case "setDocumentCode":
-											setDocumentCode(
-												computedInElement, StringEscapeUtils.escapeEcmaScript(
-													(String) rollupValue.getXValue().getValue()));
-											break;
+							// } else {
 
-									}
+							getSemanticInterpreter().execute(
+								SemanticInterpreter.getFunctionName(rollupValue.getSemanticElement(), computedInSE),
+								computedInElement, theValue);
 
-								} else {
+						} else if (theValue instanceof XDataStruct) {
 
-									getSemanticInterpreter().execute(
-										SemanticInterpreter.getFunctionName(
-											rollupValue.getSemanticElement(), computedInSE),
-										computedInElement, rollupValue.getXValue().getValue());
-
-								}
-							}
+							XDataStruct xds = (XDataStruct) theValue;
+							getSemanticInterpreter().execute(
+								SemanticInterpreter.getFunctionName(rollupValue.getSemanticElement(), computedInSE),
+								computedInElement, xds);
 						} else {
 							String rollupRule = rulesBySemanticElement.get(rollupValue.getSemanticElement());
 							if (!StringUtils.isEmpty(rollupRule)) {
@@ -1215,15 +1217,19 @@ public class SemanticParser implements ISemanticParser {
 
 			if (rule.startsWith("UPDATEVALUE:")) {
 				if (elementValueSet.hasElementValuesByName(computedInSE)) {
-					for (IElementValue value : elementValueSet.getElementValuesByName(computedInSE)) {
+					for (
+
+					IElementValue value : elementValueSet.getElementValuesByName(computedInSE)) {
 						getSemanticInterpreter().update(computedInSE.getName() + "_UPDATEVALUE", value);
 					}
 				}
 			} else {
 				if (computedInSE.getParent() != null) {
+
 					XElementValue computedInElement = new XElementValue(computedInSE, elementValueSet);
 					computedInElement.setParent(parentElement);
 					parentElement.addChild(computedInElement);
+
 					getSemanticInterpreter().update(computedInSE.getName() + "_COMPUTED", computedInElement);
 				}
 
