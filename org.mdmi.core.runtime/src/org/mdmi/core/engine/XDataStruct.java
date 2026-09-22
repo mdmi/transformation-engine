@@ -172,6 +172,15 @@ public class XDataStruct extends XData {
 		}
 	}
 
+	public void addValue(String fieldName, Object value) {
+		XValue xv = getXValue(fieldName);
+		if (xv == null) {
+			logger.error("Error in setValue ", new MdmiException("Invalid fieldName: " + fieldName));
+		} else {
+			xv.addValue(value);
+		}
+	}
+
 	/**
 	 * setValueSafely will take in a dot "." delimited path and makes sure the underlying structures are created before setting value
 	 * This is a little funky based on the current XValue and XDataStructure layout
@@ -234,7 +243,7 @@ public class XDataStruct extends XData {
 	 * @param string
 	 * @return
 	 */
-	private Object getValueSafely(String string) {
+	public Object getValueSafely(String string) {
 
 		XValue xvalue = m_values.get(string);
 		if (xvalue.isEmpty()) {
@@ -419,10 +428,23 @@ public class XDataStruct extends XData {
 	}
 
 	public Object addValueSafely(String fieldName) {
-		XValue x = this.m_values.get(fieldName);
-		XValue xxx = new XValue(x.getDatatype());
-		this.setValue(fieldName, xxx);
-		return xxx.getValue();
+
+		XValue existingValue = this.m_values.get(fieldName);
+
+		if (existingValue.getDatatype().isComplex()) {
+
+			XDataStruct newValue = new XDataStruct(existingValue);
+			this.addValue(fieldName, newValue);
+
+			return newValue;
+
+		} else {
+
+			XValue newValue = new XValue(existingValue.getDatatype());
+			this.addValue(fieldName, newValue);
+
+			return newValue.getValue();
+		}
 	}
 
 } // XDataStruct
