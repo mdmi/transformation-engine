@@ -36,7 +36,6 @@ import org.mdmi.MessageGroup;
 import org.mdmi.Node;
 import org.mdmi.SemanticElement;
 import org.mdmi.core.ElementValueSet;
-import org.mdmi.core.IElementValue;
 import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver.MI;
 import org.mdmi.core.MdmiValueSet;
@@ -51,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * Implementation class for rule execution.
  */
 @SuppressWarnings("deprecation")
-class ConversionImpl {
+public class ConversionImpl {
 
 	private static Logger logger = LoggerFactory.getLogger(ConversionImpl.class);
 
@@ -63,9 +62,9 @@ class ConversionImpl {
 
 	boolean first = true;
 
-	HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget;
-
-	HashMap<IElementValue, IElementValue> targettosource;
+	// HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget;
+	//
+	// HashMap<IElementValue, IElementValue> targettosource;
 
 	ElementValueSet trgSemanticModel;
 
@@ -74,10 +73,9 @@ class ConversionImpl {
 	 * @param targettosource
 	 * @param trgSemanticModel
 	 */
-	public ConversionImpl(HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget,
-			HashMap<IElementValue, IElementValue> targettosource, ElementValueSet trgSemanticModel) {
-		this.sourcetotarget = sourcetotarget;
-		this.targettosource = targettosource;
+	public ConversionImpl(ElementValueSet trgSemanticModel) {
+		// this.sourcetotarget = sourcetotarget;
+		// this.targettosource = targettosource;
 		this.trgSemanticModel = trgSemanticModel;
 	}
 
@@ -399,25 +397,25 @@ class ConversionImpl {
 
 			if (toSE.getRule().endsWith("REVERSE")) {
 
-				if (sourceSemanticElement.getParent() != null &&
-						sourcetotarget.containsKey(sourceSemanticElement.getParent())) {
-					guidValue = "urn:uuid:" +
-							sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
-
-				} else {
-				}
+				// if (sourceSemanticElement.getParent() != null &&
+				// sourcetotarget.containsKey(sourceSemanticElement.getParent())) {
+				// guidValue = "urn:uuid:" +
+				// sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
+				//
+				// } else {
+				// }
 
 			} else {
 
-				if (trg.getSemanticElement().isMultipleInstances()) {
-					if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
-						guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
+				// if (trg.getSemanticElement().isMultipleInstances()) {
+				// if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
+				// guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
+				//
+				// }
+				// } else {
 
-					}
-				} else {
-
-					guidValue = "urn:uuid:" + sourceSemanticElement.getUniqueId();
-				}
+				guidValue = "urn:uuid:" + sourceSemanticElement.getUniqueId();
+				// }
 			}
 
 			guid.setValue(guidValue);

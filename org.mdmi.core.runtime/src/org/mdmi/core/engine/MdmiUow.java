@@ -51,6 +51,8 @@ import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver;
 import org.mdmi.core.MdmiTransferInfo;
 import org.mdmi.core.engine.javascript.Utils;
+import org.mdmi.core.engine.semanticprocessors.LogSemantic;
+import org.mdmi.core.engine.semanticprocessors.LogSemantic.DIRECTION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,7 @@ import com.google.gson.GsonBuilder;
  * MDMI Unit of Work. Will execute a transfer from the source to the target
  * messages, based on the given maps.
  *
- * @author goancea
+ *
  */
 public class MdmiUow implements Runnable {
 
@@ -402,10 +404,6 @@ public class MdmiUow implements Runnable {
 		return false;
 	}
 
-	void findTargetSemanticElements() {
-
-	}
-
 	static ConversionRule getToBE(SemanticElement src, MDMIBusinessElementReference ber) {
 		Collection<ConversionRule> toBEs = src.getMapFromMdmi();
 		for (Iterator<ConversionRule> it = toBEs.iterator(); it.hasNext();) {
@@ -494,6 +492,397 @@ public class MdmiUow implements Runnable {
 		return false;
 	}
 
+	/**
+	 * Ensures every existing parent-child XElementValue relationship follows the
+	 * semantic hierarchy. Missing semantic elements are materialized between the
+	 * current parent and child; the original child value is retained.
+	 */
+	private void fillInSemanticPathElements() {
+		List<IElementValue> allValues = trgSemanticModel.getAllElementValues();
+		if (allValues == null || allValues.isEmpty()) {
+			return;
+		}
+
+		// Snapshot the original values: creating intermediate values can extend
+		// the model's all-element-values list while this pass is running.
+		List<IElementValue> originalValues = new ArrayList<>(allValues);
+		ListIterator<IElementValue> resolutionIterator = allValues.listIterator(allValues.size());
+
+		for (IElementValue childValue : originalValues) {
+			if (childValue == null || childValue.getParent() == null || childValue.getSemanticElement() == null) {
+				continue;
+			}
+
+			IElementValue parentValue = childValue.getParent();
+			SemanticElement parentSemantic = parentValue.getSemanticElement();
+			SemanticElement childSemantic = childValue.getSemanticElement();
+			if (parentSemantic == null || isDirectSemanticChild(parentSemantic, childSemantic)) {
+				continue;
+			}
+
+			List<SemanticElement> path = new ArrayList<>();
+			if (!findSemanticPath(parentSemantic, childSemantic, path) || path.size() <= 2) {
+				// The child is not below this semantic parent, or there are no
+				// missing elements to insert.
+				continue;
+			}
+
+			logger.trace("Filling semantic path between {} and {}", parentSemantic.getName(), childSemantic.getName());
+
+			// Detach the child from its current runtime parent before rebuilding
+			// the chain. The final node in the path is the existing child value.
+			parentValue.removeChild(childValue);
+			IElementValue currentValueParent = parentValue;
+
+			for (int i = 1; i < path.size() - 1; i++) {
+				SemanticElement intermediateSemantic = path.get(i);
+
+				// Reuse an intermediate XElementValue that an earlier child caused
+				// us to create under this same runtime parent. This preserves shared
+				// semantic ancestors, e.g. A -> B -> C and A -> B -> D.
+				IElementValue intermediateValue = findChildBySemanticUniqueId(
+					currentValueParent, intermediateSemantic.getUniqueId());
+
+				if (intermediateValue == null) {
+					intermediateValue = new XElementValue(intermediateSemantic, trgSemanticModel, resolutionIterator);
+					intermediateValue.setParent(currentValueParent);
+					currentValueParent.addChild(intermediateValue);
+
+					logger.trace(
+						"Created missing semantic path element {} under {}", intermediateSemantic.getName(),
+						currentValueParent.getSemanticElement() != null
+								? currentValueParent.getSemanticElement().getName()
+								: "<root>");
+				} else {
+					logger.trace(
+						"Reusing semantic path element {} under {}", intermediateSemantic.getName(),
+						currentValueParent.getSemanticElement() != null
+								? currentValueParent.getSemanticElement().getName()
+								: "<root>");
+				}
+
+				currentValueParent = intermediateValue;
+			}
+
+			childValue.setParent(currentValueParent);
+			currentValueParent.addChild(childValue);
+		}
+	}
+
+	/**
+	 * Returns an existing runtime child whose semantic element has the requested
+	 * unique ID. Only direct children are considered so the runtime hierarchy
+	 * remains aligned with the semantic path.
+	 */
+	private IElementValue findChildBySemanticUniqueId(IElementValue parentValue, String semanticUniqueId) {
+		if (parentValue == null || parentValue.getChildren() == null) {
+			return null;
+		}
+		for (IElementValue childValue : parentValue.getChildren()) {
+			if (childValue != null && childValue.getSemanticElement() != null &&
+					Objects.equals(childValue.getSemanticElement().getUniqueId(), semanticUniqueId)) {
+				return childValue;
+			}
+		}
+		return null;
+	}
+
+	private boolean isDirectSemanticChild(SemanticElement parent, SemanticElement child) {
+		if (parent == null || child == null || parent.getChildren() == null) {
+			return false;
+		}
+		String childUniqueId = child.getUniqueId();
+		for (SemanticElement semanticChild : parent.getChildren()) {
+			if (semanticChild != null && Objects.equals(semanticChild.getUniqueId(), childUniqueId)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Finds a descendant path from parent to target, inclusive of both endpoints.
+	 * Semantic unique IDs are used rather than Java object identity.
+	 */
+	private boolean findSemanticPath(SemanticElement parent, SemanticElement target, List<SemanticElement> path) {
+		if (parent == null || target == null) {
+			return false;
+		}
+		path.add(parent);
+		if (Objects.equals(parent.getUniqueId(), target.getUniqueId())) {
+			return true;
+		}
+		if (parent.getChildren() != null) {
+			for (SemanticElement child : parent.getChildren()) {
+				if (child == null) {
+					continue;
+				}
+				if (findSemanticPath(child, target, path)) {
+					return true;
+				}
+			}
+		}
+		path.remove(path.size() - 1);
+		return false;
+	}
+
+	private void walkTransferElements(Set<IElementValue> whattotransfer,
+			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER, ConversionImpl impl) {
+
+		System.out.println("=== walkTransferElements START ===");
+
+		if (whattotransfer == null || whattotransfer.isEmpty()) {
+			System.out.println("No elements to transfer.");
+			return;
+		}
+
+		System.out.println("Elements to transfer: " + whattotransfer.size());
+
+		for (IElementValue element : whattotransfer) {
+
+			if (element == null) {
+				System.out.println("Skipping null transfer element.");
+				continue;
+			}
+
+			IElementValue parent = element.getParent();
+
+			System.out.println("\nChecking source element: " + element.getUniqueId());
+
+			System.out.println(
+				"Source parent: " + (parent != null
+						? parent.getUniqueId()
+						: "null"));
+
+			if (parent == null || !whattotransfer.contains(parent)) {
+
+				System.out.println("Starting traversal at: " + element.getUniqueId());
+
+				walkElement(element, null, targetSementicElementsByBER, impl);
+
+			} else {
+				System.out.println("Skipping element; parent is also " + "in whattotransfer.");
+			}
+		}
+
+		System.out.println("=== walkTransferElements END ===");
+	}
+
+	private void walkElement(IElementValue sourceElement, XElementValue targetParent,
+			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER, ConversionImpl impl) {
+
+		if (sourceElement == null) {
+			System.out.println("walkElement: source element is null.");
+			return;
+		}
+
+		SemanticElement sourceSemantic = sourceElement.getSemanticElement();
+
+		if (sourceSemantic == null) {
+			System.out.println("Source semantic element is null for " + sourceElement.getUniqueId());
+			return;
+		}
+
+		System.out.println("\n----------------------------------------");
+		System.out.println(
+			"Source element: " + sourceSemantic.getName() + " [uniqueId=" + sourceElement.getUniqueId() + "]");
+
+		System.out.println(
+			"Target parent: " + (targetParent != null
+					? targetParent.getUniqueId()
+					: "null"));
+
+		if (sourceSemantic.getMapToMdmi() == null || sourceSemantic.getMapToMdmi().isEmpty()) {
+			System.out.println("No conversion rules for " + sourceSemantic.getName());
+		} else {
+			int ruleIndex = 0;
+
+			for (ConversionRule tme : sourceSemantic.getMapToMdmi()) {
+
+				ruleIndex++;
+
+				System.out.println("\nProcessing conversion rule " + ruleIndex);
+
+				if (tme == null || tme.getBusinessElement() == null) {
+					System.out.println("Conversion rule or business element " + "is null; skipping.");
+					continue;
+				}
+
+				String ber = tme.getBusinessElement().getUniqueIdentifier();
+
+				System.out.println("Business element BER: " + ber);
+
+				ArrayList<SemanticElement> targetSemanticElements = targetSementicElementsByBER.get(ber);
+
+				if (targetSemanticElements == null || targetSemanticElements.isEmpty()) {
+					System.out.println("No targets found for BER: " + ber);
+					continue;
+				}
+
+				System.out.println("Matching target semantic elements: " + targetSemanticElements.size());
+
+				int targetIndex = 0;
+
+				for (SemanticElement targetSemanticElement : targetSemanticElements) {
+
+					targetIndex++;
+
+					if (targetSemanticElement == null) {
+						System.out.println("Target " + targetIndex + " is null; skipping.");
+						continue;
+					}
+
+					System.out.println(
+						"\nChecking target " + targetIndex + ": " + targetSemanticElement.getName() + " [uniqueId=" +
+								targetSemanticElement.getUniqueId() + "]");
+
+					// For non-Container targets, ensure that the target
+					// belongs to the target parent's semantic hierarchy.
+					if (targetParent != null && !"Container".equals(targetSemanticElement.getDatatype().getName())) {
+
+						SemanticElement parentSemantic = targetParent.getSemanticElement();
+
+						if (parentSemantic == null || !containsSemanticElement(parentSemantic, targetSemanticElement)) {
+
+							System.out.println(
+								"Skipping target " + targetSemanticElement.getName() +
+										": it is not a descendant of target parent " + (parentSemantic != null
+												? parentSemantic.getName()
+												: "null"));
+
+							continue;
+						}
+
+						System.out.println("Target is a descendant of " + parentSemantic.getName());
+					} else if (targetParent == null) {
+						System.out.println("No target parent; descendant " + "check is not applicable.");
+					} else {
+						System.out.println("Target is a Container; " + "descendant check is bypassed.");
+					}
+
+					// Create a new target XElementValue for this rule/target.
+					XElementValue targetElement = createXElementValue(
+						targetParent, sourceElement, targetSemanticElement, impl, tme);
+
+					if (targetElement == null) {
+						System.out.println("XElementValue creation failed.");
+						continue;
+					}
+
+					System.out.println("Created target XElementValue: " + targetElement.getUniqueId());
+
+					if (targetParent != null) {
+						targetElement.setParent(targetParent);
+
+						System.out.println("Set target parent: " + targetParent.getUniqueId());
+					}
+
+					// Process each source child independently under this
+					// newly created target element.
+					if (sourceElement.getChildren() != null && !sourceElement.getChildren().isEmpty()) {
+
+						System.out.println(
+							"Processing " + sourceElement.getChildren().size() + " source children under target " +
+									targetElement.getUniqueId());
+
+						for (IElementValue child : sourceElement.getChildren()) {
+							System.out.println(
+								"Recursing into child: " + (child != null
+										? child.getUniqueId()
+										: "null"));
+
+							walkElement(child, targetElement, targetSementicElementsByBER, impl);
+						}
+					} else {
+						System.out.println("No source children for " + sourceElement.getUniqueId());
+					}
+				}
+			}
+		}
+
+		System.out.println("walkElement END: " + sourceElement.getUniqueId());
+	}
+
+	private boolean containsSemanticElement(SemanticElement parent, SemanticElement target) {
+
+		if (parent == null || target == null) {
+			return false;
+		}
+
+		System.out.println("Checking semantic hierarchy: parent=" + parent.getName() + ", target=" + target.getName());
+
+		// Compare unique IDs rather than Java object references.
+		if (parent.getUniqueId().equals(target.getUniqueId())) {
+			System.out.println("Semantic element matched: " + target.getName());
+			return true;
+		}
+
+		if (parent.getChildren() == null) {
+			return false;
+		}
+
+		for (SemanticElement child : parent.getChildren()) {
+			if (containsSemanticElement(child, target)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private XElementValue createXElementValue(IElementValue targetParent, IElementValue sourceElementValue,
+			SemanticElement targetSemanticElement, ConversionImpl impl, ConversionRule tme) {
+
+		System.out.println("createXElementValue START");
+		System.out.println("Source element ID: " + sourceElementValue.getUniqueId());
+		System.out.println("Target semantic element: " + targetSemanticElement.getName());
+		XElementValue targetElementValue = new XElementValue(targetSemanticElement, trgSemanticModel);
+
+		logger.trace(
+			" Creating target element " + targetSemanticElement.getName() + " from source semantic element" +
+					sourceElementValue.getSemanticElement().getName());
+
+		try {
+			@SuppressWarnings("deprecation")
+			org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
+				targetSemanticElement, tme.getBusinessElement(), tme.getBusinessElement());
+			impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
+			if (targetParent != null) {
+				targetElementValue.setParent(targetParent);
+				targetParent.addChild(targetElementValue);
+			}
+
+			System.out.println("Created target element ID: " + targetElementValue.getUniqueId());
+			System.out.println("createXElementValue END");
+
+		} catch (
+
+		Exception e) {
+			logger.error("ERROR IN CONVERSION", e);
+		}
+
+		return targetElementValue;
+	}
+
+	private void printTargetSemanticElementsByBER(
+			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER) {
+
+		for (Map.Entry<String, ArrayList<SemanticElement>> entry : targetSementicElementsByBER.entrySet()) {
+
+			String key = entry.getKey();
+			ArrayList<SemanticElement> elements = entry.getValue();
+
+			System.out.println("BER Key: " + key);
+
+			if (elements != null) {
+				for (SemanticElement element : elements) {
+					System.out.println(
+						"  Semantic Element: " + element.getName() + " [uniqueId=" + element.getUniqueId() + "]");
+				}
+			}
+		}
+	}
+
 	void processConversions() {
 
 		this.transferInfo.targetMessage.getUnspecifiedNodes().addAll(
@@ -501,9 +890,7 @@ public class MdmiUow implements Runnable {
 
 		StopWatch watch = new StopWatch();
 		watch.start();
-
-		// 3. execute the data conversions
-
+		// Execute the data conversions.
 		Set<IElementValue> whattotransfer = new LinkedHashSet<>();
 		HashMap<String, MDMIBusinessElementReference> matches = new HashMap<>();
 		for (IElementValue iev : srcSemanticModel.getAllElementValues()) {
@@ -542,10 +929,7 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.info("match : " + watch.toSplitString());
 
-		HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget = new HashMap<>();
-		HashMap<IElementValue, IElementValue> targettosource = new HashMap<>();
-
-		ConversionImpl impl = new ConversionImpl(sourcetotarget, targettosource, trgSemanticModel);
+		ConversionImpl impl = new ConversionImpl(trgSemanticModel);
 
 		impl.initializeDI(
 			transferInfo.sourceModel.getGroup(), transferInfo.targetModel.getGroup(), transferInfo.sourceProperties,
@@ -590,151 +974,16 @@ public class MdmiUow implements Runnable {
 
 		}
 
-		HashMap<String, Boolean> filtered = new HashMap<>();
-		for (IElementValue sourceElementValue : whattotransfer) {
+		printTargetSemanticElementsByBER(targetSementicElementsByBER);
+		walkTransferElements(whattotransfer, targetSementicElementsByBER, impl);
 
-			// Create list of RI for the element
+		// Insert target semantic elements that are missing between an existing
+		// XElementValue parent and child. For example, if the semantic model says
+		// A -> B -> C but the transfer created A -> C, create a B XElementValue
+		// and repair the runtime tree to A -> B -> C.
+		fillInSemanticPathElements();
 
-			for (ConversionRule tme : sourceElementValue.getSemanticElement().getMapToMdmi()) {
-
-				if ((tme.getBusinessElement() == null) ||
-						!targetSementicElementsByBER.containsKey(tme.getBusinessElement().getUniqueIdentifier())) {
-					continue;
-				}
-
-				// Create list of target semantic elements based on the source RI
-				for (SemanticElement targetSementicElement : targetSementicElementsByBER.get(
-					tme.getBusinessElement().getUniqueIdentifier())) {
-
-					if (sourceFilter) {
-						if ("Container".equals(targetSementicElement.getDatatype().getName()) &&
-								targetSementicElement.getRelationshipByName("QUALIFIER") != null) {
-							String theKey = sourceElementValue.getUniqueId() + "_HASFILTERED_" +
-									targetSementicElement.getUniqueId();
-
-							if (!filtered.containsKey(theKey)) {
-								filtered.put(theKey, filterSource(impl, sourceElementValue, targetSementicElement));
-							}
-							if (!filtered.get(theKey)) {
-								continue;
-							}
-						} else {
-							if (targetSementicElement.getParent() != null &&
-									"Container".equals(targetSementicElement.getParent().getDatatype().getName()) &&
-									targetSementicElement.getParent().getRelationshipByName("QUALIFIER") != null &&
-									sourceElementValue.getParent() != null) {
-								String theKey = sourceElementValue.getParent().getUniqueId() + "_HASFILTERED_" +
-										targetSementicElement.getUniqueId();
-								if (!filtered.containsKey(theKey)) {
-									filtered.put(
-										theKey, filterSource(
-											impl, sourceElementValue.getParent(), targetSementicElement.getParent()));
-								}
-
-								if (!filtered.get(theKey)) {
-									continue;
-								}
-							}
-
-						}
-					}
-
-					for (ConversionRule tmo : targetSementicElement.getMapFromMdmi()) {
-
-						/*
-						 * Current caching not 100% correct
-						 * need to return getMapFrom using business element
-						 */
-						if (!tme.getBusinessElement().getUniqueIdentifier().equals(
-							tmo.getBusinessElement().getUniqueIdentifier())) {
-							continue;
-						}
-
-						if ((tmo.getRule() != null) && tmo.getRule().startsWith("REFERENCE")) {
-							continue;
-						}
-
-						Stack<SemanticElement> mappedParentStack = new Stack<>();
-						getMappedStack(targetSementicElement, mappedParentStack);
-
-						boolean wholeStackMapped = true;
-
-						if (!skipContainmentCheck) {
-							while (!mappedParentStack.isEmpty()) {
-								SemanticElement mp1 = mappedParentStack.pop();
-								boolean isMP1Mapped = false;
-								for (ConversionRule lll : mp1.getMapFromMdmi()) {
-									if (matches.containsKey(lll.getBusinessElement().getUniqueIdentifier())) {
-										isMP1Mapped = true;
-										break;
-									}
-								}
-								wholeStackMapped = isMP1Mapped;
-								if (!wholeStackMapped) {
-									break;
-								}
-							}
-						}
-
-						if (wholeStackMapped) {
-
-							logger.trace(
-								" Creating target element " + targetSementicElement.getName() +
-										" from source semantic element" +
-										sourceElementValue.getSemanticElement().getName());
-
-							XElementValue targetElementValue = new XElementValue(
-								targetSementicElement, trgSemanticModel);
-
-							try {
-								@SuppressWarnings("deprecation")
-								org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
-									targetSementicElement, tme.getBusinessElement(), tmo.getBusinessElement());
-								impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
-
-								targettosource.put(targetElementValue, sourceElementValue);
-
-								if (!sourcetotarget.containsKey(sourceElementValue)) {
-									sourcetotarget.put(sourceElementValue, new ArrayList<IElementValue>());
-								}
-								sourcetotarget.get(sourceElementValue).add(targetElementValue);
-
-							} catch (Exception e) {
-								logger.error("ERROR IN CONVERSION", e);
-							}
-						} else {
-							logger.debug(
-								sourceElementValue.getName() +
-										" NOT TRANSFERRED, Semantic containment not established");
-							if (logger.isDebugEnabled()) {
-								Stack<SemanticElement> missingSemanticStack = new Stack<>();
-								getMappedStack(targetSementicElement, missingSemanticStack);
-
-								while (!missingSemanticStack.isEmpty()) {
-									SemanticElement mp1 = missingSemanticStack.pop();
-									logger.debug("Semantic Path " + mp1.getName());
-									boolean isMP1Mapped = false;
-									for (ConversionRule lll : mp1.getMapFromMdmi()) {
-										if (matches.containsKey(lll.getBusinessElement().getUniqueIdentifier())) {
-											isMP1Mapped = true;
-											break;
-										}
-									}
-									if (!isMP1Mapped) {
-										logger.debug("MISSING ELEMENT " + mp1.getName());
-										break;
-									}
-								}
-							}
-
-						}
-
-					}
-				}
-
-			}
-
-		}
+		printElementTree(this.trgSemanticModel.getAllElementValues());
 
 		List<IElementValue> trgValues = trgSemanticModel.getAllElementValues();
 		List<IElementValue> srcValues = srcSemanticModel.getAllElementValues();
@@ -765,7 +1014,7 @@ public class MdmiUow implements Runnable {
 		}
 
 		ReferenceBuildingVisitor visitor = new ReferenceBuildingVisitor(
-			trgValues, targettosource, referencesToCreate, logger);
+			trgValues, new HashMap<IElementValue, IElementValue>(), referencesToCreate, logger);
 
 		for (IElementValue trgVal : trgValues) {
 			trgVal.accept(visitor);
@@ -794,11 +1043,6 @@ public class MdmiUow implements Runnable {
 						org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
 							r.getTarget(), tme.getBusinessElement(), tmo.getBusinessElement());
 						impl.convert((XElementValue) r.getSource(), ci, targetElementValue);
-						targettosource.put(targetElementValue, r.getSource());
-						if (!sourcetotarget.containsKey(r.getSource())) {
-							sourcetotarget.put(r.getSource(), new ArrayList<IElementValue>());
-						}
-						sourcetotarget.get(r.getSource()).add(targetElementValue);
 					}
 				}
 
@@ -904,79 +1148,11 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.trace("singles : " + watch.toSplitString());
 
-		logger.trace("=== sourcetotarget map dump ===");
-		for (IElementValue source : sourcetotarget.keySet()) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("source=").append(source.getName()).append("(").append(source.getUniqueId()).append(
-				") -> targets=[");
-			boolean first = true;
-			for (IElementValue target : sourcetotarget.get(source)) {
-				if (!first) {
-					sb.append(", ");
-				}
-				sb.append(target.getName()).append("(").append(target.getUniqueId()).append(")");
-				first = false;
-			}
-			sb.append("]");
-			logger.info(sb.toString());
-		}
-		logger.trace("=== end sourcetotarget map dump ===");
+		printElementTree(this.trgSemanticModel.getAllElementValues());
 
-		for (IElementValue targetElementValue : this.trgSemanticModel.getAllElementValues()) {
-			if (targettosource.containsKey(targetElementValue)) {
-				if (targetElementValue.getParent() == null) {
-					if (targetElementValue.getSemanticElement().isMultipleInstances()) {
-						IElementValue sourceElementValue = targettosource.get(targetElementValue);
-						IElementValue sourceParent = sourceElementValue.getParent();
-
-						while (sourceParent != null && !sourcetotarget.containsKey(sourceParent)) {
-							sourceParent = sourceParent.getParent();
-						}
-						if (sourceParent != null && sourcetotarget.containsKey(sourceParent)) {
-							for (IElementValue targetParent : sourcetotarget.get(sourceParent)) {
-								if (targetParent.getSemanticElement().getRelationshipByName("QUALIFIER") != null) {
-									for (SemanticElement child : targetParent.getSemanticElement().getChildren()) {
-
-										if (targetElementValue.getSemanticElement().getUniqueId().equals(
-											child.getUniqueId())) {
-											logger.trace(
-												"ADD CHILD (QUALIFIER) parent=" + targetParent.getName() + "(" +
-														targetParent.getUniqueId() + ") child=" +
-														targetElementValue.getName() + "(" +
-														targetElementValue.getUniqueId() + ")");
-											targetParent.addChild(targetElementValue);
-										}
-									}
-								} else {
-									if (!semanticReferences.contains(targetParent.getSemanticElement().getUniqueId())) {
-										logger.trace(
-											"ADD CHILD parent=" + targetParent.getName() + "(" +
-													targetParent.getUniqueId() + ") child=" +
-													targetElementValue.getName() + "(" +
-													targetElementValue.getUniqueId() + ")");
-										targetParent.addChild(targetElementValue);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-		}
-
-		for (Object o : impl.refereneces.keySet()) {
-			XDataStruct xValue = (XDataStruct) o;
-			XElementValue foo = impl.refereneces.get(o);
-			IElementValue bar = sourcetotarget.get(impl.refereneces.get(o)).get(0);
-			ArrayList<IElementValue> targets = sourcetotarget.get(impl.refereneces.get(o));
-			for (IElementValue target : targets) {
-				if ("Container".equals(target.getSemanticElement().getDatatype().getName())) {
-					String guidValue = "urn:uuid:" + target.getUniqueId();
-					xValue.setValueSafely("reference.value", guidValue);
-				}
-			}
-		}
+		printElementTree(this.trgSemanticModel.getAllElementValues());
+		LogSemantic lg = new LogSemantic(DIRECTION.TO);
+		lg.processSemanticModel(this.trgSemanticModel);
 
 		ListIterator<IElementValue> iterator = trgSemanticModel.getAllElementValues().listIterator();
 
@@ -1010,7 +1186,7 @@ public class MdmiUow implements Runnable {
 
 		if (!sourceFilter) {
 
-			for (IElementValue targetElementValue : targettosource.keySet()) {
+			for (IElementValue targetElementValue : trgSemanticModel.getAllElementValues()) {
 				SemanticElement se = targetElementValue.getSemanticElement();
 				SemanticElementRelationship ser = se.getRelationshipByName("QUALIFIER");
 
@@ -1144,6 +1320,12 @@ public class MdmiUow implements Runnable {
 
 		StopWatch watch = new StopWatch();
 		watch.start();
+
+		for (IElementValue xx : trgSemanticModel.getAllElementValues()) {
+			System.err.println(xx.getSemanticElement().getName());
+			System.err.println(xx.getSemanticElement().getUniqueId());
+
+		}
 
 		trgSemProv.updateTargetSemanticModel(
 			transferInfo.targetModel.getModel(), trgSemanticModel, trgSyntaxModel, transferInfo.targetProperties,
@@ -1470,6 +1652,59 @@ public class MdmiUow implements Runnable {
 		this.srcSyntaxModel = null;
 		this.trgSyntaxModel = null;
 
+	}
+
+	public void printElementTree(List<IElementValue> elementValues) {
+		Set<String> printedIds = new HashSet<>();
+
+		for (IElementValue elementValue : elementValues) {
+			if (elementValue.getParent() == null) {
+				printElementTree(elementValue, 0, printedIds);
+			}
+		}
+
+		// Verify that every element in the original list was printed
+		for (IElementValue elementValue : elementValues) {
+			String uniqueId = elementValue.getUniqueId();
+
+			if (!printedIds.contains(uniqueId)) {
+				System.out.println("NOT PRINTED: " + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
+			}
+		}
+
+		System.out.println("Total elements: " + elementValues.size());
+		System.out.println("Printed elements: " + printedIds.size());
+		System.out.println("All elements printed: " + (printedIds.size() == elementValues.size()));
+	}
+
+	private void printElementTree(IElementValue elementValue, int depth, Set<String> printedIds) {
+
+		if (elementValue == null) {
+			return;
+		}
+
+		String uniqueId = elementValue.getUniqueId();
+
+		// Prevent duplicate printing and infinite recursion
+		if (!printedIds.add(uniqueId)) {
+			return;
+		}
+
+		String indent = "  ".repeat(depth);
+
+		System.out.println(indent + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
+
+		if (elementValue.getChildren() != null) {
+			for (IElementValue child : elementValue.getChildren()) {
+				printElementTree(child, depth + 1, printedIds);
+			}
+		}
+	}
+
+	private String getSemanticName(IElementValue elementValue) {
+		return elementValue.getSemanticElement() != null
+				? elementValue.getSemanticElement().getName()
+				: "null";
 	}
 
 } // MdmiUow

@@ -172,10 +172,135 @@ public final class ElementValueSet {
 
 	}
 
-	public void removeElementValue(IElementValue xelement) {
-		for (IElementValue child : xelement.getChildren()) {
-			this.removeElementValue(child);
+	/**
+	 * Remove an element value and all of its descendants from this set.
+	 *
+	 * The elements are first collected using the IElementValue visitor.
+	 * The collections are then modified after traversal is complete.
+	 *
+	 * @param elementValue
+	 *            The element value to remove.
+	 */
+
+	public List<IElementValue> getChildrena(IElementValue parent) {
+
+		List<IElementValue> children = new LinkedList<>();
+
+		for (IElementValue element : theSetOfAll) {
+
+			if (element.getParent() == parent) {
+				children.add(element);
+			}
 		}
+
+		return children;
+	}
+
+	public void removeElementValue(IElementValue elementValue) {
+
+		if (elementValue == null) {
+			return;
+		}
+
+		// Collect the complete subtree before modifying anything.
+		ArrayList<IElementValue> elementsToRemove = new ArrayList<>();
+
+		elementValue.accept(new IElementValue.ElementValueVisitor() {
+			@Override
+			public void visit(IElementValue value) {
+				elementsToRemove.add(value);
+			}
+		});
+
+		List<IElementValue> theissue = getChildrena(elementValue);
+
+		// Remove all collected elements from the ElementValueSet.
+		removeElementValues(elementsToRemove);
+
+		// Detach the root from its parent.
+		IElementValue parent = elementValue.getParent();
+
+		if (parent != null) {
+			parent.removeChild(elementValue);
+		}
+
+		// Clear parent references for all removed elements.
+		for (IElementValue value : elementsToRemove) {
+			value.setParent(null);
+		}
+	}
+
+	/**
+	 * Remove a collection of element values from this set.
+	 *
+	 * @param elementsToRemove
+	 *            The element values to remove.
+	 */
+	public void removeElementValues(List<IElementValue> elementsToRemove) {
+
+		if (elementsToRemove == null || elementsToRemove.isEmpty()) {
+			return;
+		}
+
+		for (IElementValue elementValue : elementsToRemove) {
+
+			if (elementValue == null) {
+				continue;
+			}
+
+			// Remove from the set containing all element values.
+			theSetOfAll.remove(elementValue);
+
+			// Remove from the semantic-element index.
+			SemanticElement semanticElement = elementValue.getSemanticElement();
+
+			if (semanticElement != null) {
+
+				String uniqueId = semanticElement.getUniqueId();
+
+				if (uniqueId != null) {
+
+					List<IElementValue> elements = m_xelements.get(uniqueId);
+
+					if (elements != null) {
+
+						elements.remove(elementValue);
+
+						// Remove empty index entries.
+						if (elements.isEmpty()) {
+							m_xelements.remove(uniqueId);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public void removeElementValue3(IElementValue elementValue) {
+		// Remove from the set of all elements
+		theSetOfAll.remove(elementValue);
+
+		// Remove from the semantic-element map
+		if (elementValue.getSemanticElement() != null) {
+			String uniqueId = elementValue.getSemanticElement().getUniqueId();
+
+			List<IElementValue> elements = m_xelements.get(uniqueId);
+
+			if (elements != null) {
+				elements.remove(elementValue);
+
+				// Remove the key if there are no remaining elements
+				if (elements.isEmpty()) {
+					m_xelements.remove(uniqueId);
+				}
+			}
+		}
+	}
+
+	public void removeElementValue2(IElementValue xelement) {
+		// for (IElementValue child : xelement.getChildren()) {
+		// this.removeElementValue(child);
+		// }
 
 		this.theSetOfAll.remove(xelement);
 
