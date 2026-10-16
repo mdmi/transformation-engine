@@ -11,11 +11,11 @@ package org.mdmi.core.engine.semanticprocessors;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.mdmi.ConversionRule;
 import org.mdmi.MessageModel;
 import org.mdmi.core.ElementValueSet;
@@ -146,18 +146,40 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 		return false;
 	}
 
-	void serializeXDataStruct(XDataStruct v, int indent, StringBuffer sb) {
+	void serializeXDataStructa(XDataStruct v, int indent, StringBuffer sb) {
 
 		for (String field : v.getFields()) {
 			if (v.getValue(field) != null) {
 				if (v.getValue(field) instanceof String) {
-					log(StringUtils.repeat(".", indent + 2) + " " + field + " = " + v.getValue(field), sb);
+					log(field + " = " + v.getValue(field), sb);
 				} else if (v.getValue(field) instanceof XDataStruct) {
-					log(StringUtils.repeat("-", indent + 2) + "> " + field, sb);
+					log(field, sb);
 					serializeXDataStruct((XDataStruct) v.getValue(field), indent + 4, sb);
 				} else {
 					log(v.getValue(field).getClass() + " " + v.getValue(field), sb);
 				}
+			}
+		}
+	}
+
+	void serializeXDataStruct(XDataStruct v, int indent, StringBuffer sb) {
+		for (String field : v.getFields()) {
+			Object value = v.getValue(field);
+
+			if (value == null) {
+				continue;
+			}
+
+			if (value instanceof String) {
+				sb.append(" ".repeat(indent)).append(field).append(" = ").append(value).append(",");
+
+			} else if (value instanceof XDataStruct) {
+				sb.append(" ".repeat(indent)).append(field).append(",");
+
+				serializeXDataStruct((XDataStruct) value, indent + 4, sb);
+
+			} else {
+				sb.append(" ".repeat(indent)).append(value.getClass()).append(" ").append(value).append(",");
 			}
 		}
 	}
@@ -179,16 +201,14 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 		if (!businessElementName.equals("NONE")) {
 
 			if (semanticElement.getXValue().getValue() instanceof XDataStruct) {
-				log(
-					StringUtils.repeat("-", indent) + "> " + semanticElement.getName() + " (" + businessElementName +
-							")",
-					sb);
+				log(semanticElement.getName() + " (" + businessElementName + ")", sb);
 				XDataStruct v = (XDataStruct) semanticElement.getXValue().getValue();
 				serializeXDataStruct(v, indent, sb);
+				log(sb.toString(), sb);
 			} else {
 				log(
-					StringUtils.repeat("-", indent) + "> " + semanticElement.getName() + " (" + businessElementName +
-							")" + " = " + semanticElement.getXValue().getValue(),
+					semanticElement.getName() + " (" + businessElementName + ")" + " = " +
+							semanticElement.getXValue().getValue(),
 					sb);
 			}
 		}
@@ -208,18 +228,21 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 	public void processSemanticModel(ElementValueSet semanticModel) {
 
 		StringBuffer sb = new StringBuffer();
-		List<IElementValue> parents = new ArrayList<>();
+		printElementTree(semanticModel.getAllElementValues(), sb);
 
-		for (IElementValue semanticElement : semanticModel.getAllElementValues()) {
-			if (semanticElement.getParent() == null) {
-				parents.add(semanticElement);
-			}
-		}
-
-		for (IElementValue semanticElement : parents) {
-			log(semanticElement, 1, sb);
-		}
-
+		// StringBuffer sb = new StringBuffer();
+		// List<IElementValue> parents = new ArrayList<>();
+		//
+		// for (IElementValue semanticElement : semanticModel.getAllElementValues()) {
+		// if (semanticElement.getParent() == null) {
+		// parents.add(semanticElement);
+		// }
+		// }
+		//
+		// for (IElementValue semanticElement : parents) {
+		// log(semanticElement, 1, sb);
+		// }
+		//
 		if (logger.isTraceEnabled()) {
 			try {
 				Files.createDirectories(Paths.get("./logs"));
@@ -232,6 +255,93 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 				logger.trace("Unable to log datatypes");
 			}
 		}
+	}
+
+	public void printElementTree(List<IElementValue> elementValues, StringBuffer sb) {
+		Set<String> printedIds = new HashSet<>();
+
+		for (IElementValue elementValue : elementValues) {
+			if (elementValue.getParent() == null) {
+				printElementTree(elementValue, 0, printedIds, sb);
+			}
+		}
+
+		// Verify that every element in the original list was printed
+		for (IElementValue elementValue : elementValues) {
+			String uniqueId = elementValue.getUniqueId();
+
+			if (!printedIds.contains(uniqueId)) {
+				log("NOT PRINTED: " + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]", sb);
+			}
+		}
+
+		log("Total elements: " + elementValues.size(), sb);
+		log("Printed elements: " + printedIds.size(), sb);
+		log("All elements printed: " + (printedIds.size() == elementValues.size()), sb);
+	}
+
+	private void printElementTree(IElementValue elementValue, int depth, Set<String> printedIds, StringBuffer sb) {
+
+		String businessElementName = "NONE";
+
+		if (elementValue.getSemanticElement() != null) {
+
+			if (direction.equals(DIRECTION.TO)) {
+				for (ConversionRule fromRule : elementValue.getSemanticElement().getMapToMdmi()) {
+					businessElementName = fromRule.getBusinessElement().getName();
+				}
+			} else {
+				for (ConversionRule fromRule : elementValue.getSemanticElement().getMapFromMdmi()) {
+					businessElementName = fromRule.getBusinessElement().getName();
+				}
+			}
+		}
+
+		if (elementValue == null) {
+			return;
+		}
+
+		String uniqueId = elementValue.getUniqueId();
+
+		// Prevent duplicate printing and infinite recursion
+		if (!printedIds.add(uniqueId)) {
+			return;
+		}
+
+		String indent = "  ".repeat(depth);
+
+		log(
+			indent + getSemanticName(elementValue) + "[SEER=" + businessElementName + "] [uniqueId=" + uniqueId + "]" +
+					" = " + getSemanticValue(elementValue),
+			sb);
+
+		if (elementValue.getChildren() != null) {
+			for (IElementValue child : elementValue.getChildren()) {
+				printElementTree(child, depth + 1, printedIds, sb);
+			}
+		}
+	}
+
+	private String getSemanticValue(IElementValue elementValue) {
+
+		StringBuffer sb = new StringBuffer();
+		if (elementValue.getXValue().getValue() instanceof XDataStruct) {
+
+			XDataStruct v = (XDataStruct) elementValue.getXValue().getValue();
+			sb.append(v.getDatatype().getName() + " : ");
+			serializeXDataStruct(v, 0, sb);
+		} else {
+			sb.append(elementValue.getXValue().getName() + " : ");
+			sb.append(elementValue.getXValue().getValue());
+		}
+		return sb.toString();
+
+	}
+
+	private String getSemanticName(IElementValue elementValue) {
+		return elementValue.getSemanticElement() != null
+				? elementValue.getSemanticElement().getName()
+				: "null";
 	}
 
 }

@@ -29,9 +29,12 @@ public class Normalizer2 extends ConfigurableSemanticProcessor {
 
 		IElementValue rootElement = null;
 		for (IElementValue element : elementSet.getAllElementValues()) {
-			if (element.getParent() == null) {
+			if ("X12".equalsIgnoreCase(element.getSemanticElement().getName())) {
 				rootElement = element;
 			}
+			// if (element.getParent() == null) {
+			// rootElement = element;
+			// }
 		}
 
 		for (IElementValue element : elementSet.getAllElementValues()) {

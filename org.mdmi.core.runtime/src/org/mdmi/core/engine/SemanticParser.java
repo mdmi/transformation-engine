@@ -11,12 +11,14 @@ package org.mdmi.core.engine;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Stack;
 
 import org.apache.commons.lang3.StringUtils;
@@ -76,6 +78,59 @@ public class SemanticParser implements ISemanticParser {
 		this.sourceMessageGroup = messageGroup;
 	}
 
+	public void printElementTree(List<IElementValue> elementValues) {
+		Set<String> printedIds = new HashSet<>();
+
+		for (IElementValue elementValue : elementValues) {
+			if (elementValue.getParent() == null) {
+				printElementTree(elementValue, 0, printedIds);
+			}
+		}
+
+		// Verify that every element in the original list was printed
+		for (IElementValue elementValue : elementValues) {
+			String uniqueId = elementValue.getUniqueId();
+
+			if (!printedIds.contains(uniqueId)) {
+				System.out.println("NOT PRINTED: " + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
+			}
+		}
+
+		System.out.println("Total elements: " + elementValues.size());
+		System.out.println("Printed elements: " + printedIds.size());
+		System.out.println("All elements printed: " + (printedIds.size() == elementValues.size()));
+	}
+
+	private void printElementTree(IElementValue elementValue, int depth, Set<String> printedIds) {
+
+		if (elementValue == null) {
+			return;
+		}
+
+		String uniqueId = elementValue.getUniqueId();
+
+		// Prevent duplicate printing and infinite recursion
+		if (!printedIds.add(uniqueId)) {
+			return;
+		}
+
+		String indent = "  ".repeat(depth);
+
+		System.out.println(indent + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
+
+		if (elementValue.getChildren() != null) {
+			for (IElementValue child : elementValue.getChildren()) {
+				printElementTree(child, depth + 1, printedIds);
+			}
+		}
+	}
+
+	private String getSemanticName(IElementValue elementValue) {
+		return elementValue.getSemanticElement() != null
+				? elementValue.getSemanticElement().getName()
+				: "null";
+	}
+
 	@Override
 	public void buildSemanticModel(MessageModel mdl, ISyntaxNode yroot, ElementValueSet eset, Properties properties,
 			JSONObject values) {
@@ -104,10 +159,14 @@ public class SemanticParser implements ISemanticParser {
 		getElements((YNode) yroot);
 		logSplit(watch, "getElements");
 
+		printElementTree(valueSet.getAllElementValues());
+
 		for (IElementValue xe : valueSet.getAllElementValues()) {
 			setRelations((XElementValue) xe);
 		}
 		logSplit(watch, "set relationships");
+
+		printElementTree(valueSet.getAllElementValues());
 
 		List<IElementValue> foundElements = new ArrayList<>();
 		for (IElementValue ses : eset.getAllElementValues()) {
@@ -115,6 +174,7 @@ public class SemanticParser implements ISemanticParser {
 				foundElements.add(ses);
 			}
 		}
+		printElementTree(valueSet.getAllElementValues());
 		logSplit(watch, "collect container elements (found=" + foundElements.size() + ")");
 
 		for (IElementValue elementValue : foundElements) {
@@ -575,6 +635,7 @@ public class SemanticParser implements ISemanticParser {
 
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner) {
 
+		System.err.println(yleaf.getNode().getName());
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
 		if (me == null) {
 			throw new MdmiException("Null SE for node {0}", MdmiUtil.getNodePath(yleaf.getNode()));
@@ -999,6 +1060,29 @@ public class SemanticParser implements ISemanticParser {
 
 	}
 
+	private IElementValue findChildBySemanticElement(IElementValue parentElement, SemanticElement semanticElement) {
+
+		if (parentElement == null || semanticElement == null) {
+			return null;
+		}
+
+		String uniqueId = semanticElement.getUniqueId();
+
+		for (IElementValue child : parentElement.getChildren()) {
+			if (child.getSemanticElement() != null && uniqueId.equals(child.getSemanticElement().getUniqueId())) {
+				return child;
+			}
+
+			IElementValue result = findChildBySemanticElement(child, semanticElement);
+
+			if (result != null) {
+				return result;
+			}
+		}
+
+		return null;
+	}
+
 	/**
 	 *
 	 * @implNote Need to revisit the computed value
@@ -1043,6 +1127,8 @@ public class SemanticParser implements ISemanticParser {
 			 *
 			 */
 
+			printElementTree(valueSet.getAllElementValues());
+
 			logger.trace("Processing SEMANTICROLLUP " + computedInSE.getName());
 
 			for (SemanticElementRelationship relationship : computedInSE.getRelationships()) {
@@ -1051,33 +1137,48 @@ public class SemanticParser implements ISemanticParser {
 					"Processing SEMANTICROLLUP Relationship " + relationship.getRelatedSemanticElement().getName());
 				rulesBySemanticElement.put(relationship.getRelatedSemanticElement(), relationship.getRule());
 
-				if (logger.isTraceEnabled()) {
-					if (elementValueSet.getElementValuesByType(relationship.getRelatedSemanticElement()).isEmpty()) {
+				// if (logger.isTraceEnabled()) {
+				// if (elementValueSet.getElementValuesByType(relationship.getRelatedSemanticElement()).isEmpty()) {
+				//
+				// logger.trace(
+				// "Processing SEMANTICROLLUP Relationship No value found for " +
+				// relationship.getRelatedSemanticElement().getName());
+				//
+				// }
+				// }
 
-						logger.trace(
-							"Processing SEMANTICROLLUP Relationship No value found for  " +
-									relationship.getRelatedSemanticElement().getName());
-
+				IElementValue child = findChildBySemanticElement(
+					parentElement, relationship.getRelatedSemanticElement());
+				if (child != null) {
+					if (!valuesByParent.containsKey(parentElement)) {
+						valuesByParent.put(parentElement, new ArrayList<>());
 					}
+
+					valuesByParent.get(parentElement).add(child);
+				} else {
+					//
+					logger.trace(
+						"Processing SEMANTICROLLUP Relationship No value found for " +
+								relationship.getRelatedSemanticElement().getName());
 				}
 
-				ArrayList<IElementValue> values = new ArrayList<>();
+				// ArrayList<IElementValue> values = new ArrayList<>();
 
-				for (IElementValue foo2 : parentElement.getChildren()) {
-					if (foo2.getSemanticElement().getName().equals(
-						relationship.getRelatedSemanticElement().getName())) {
-						values.add(foo2);
-					}
+				// for (IElementValue foo2 : parentElement.getChildren()) {
+				// if (foo2.getSemanticElement().getName().equals(
+				// relationship.getRelatedSemanticElement().getName())) {
+				// values.add(foo2);
+				// }
 
-				}
-				if (!values.isEmpty()) {
+				// }
+				// if (!values.isEmpty()) {
 
-				}
+				// }
 				// for (IElementValue iev2f : elementValueSet.getElementValuesByType(
 				// relationship.getRelatedSemanticElement())) {
 
 				// logger.trace("Walk the elements " + iev2.getName());
-				IElementValue theParentForRollup = parentElement;
+				// IElementValue theParentForRollup = parentElement;
 
 				// logger.trace("theParentForRollup " + theParentForRollup);
 				/*
@@ -1089,11 +1190,7 @@ public class SemanticParser implements ISemanticParser {
 				// }
 
 				// if (theParentForRollup != null) {
-				if (!valuesByParent.containsKey(theParentForRollup)) {
-					valuesByParent.put(theParentForRollup, new ArrayList<>());
-				}
 
-				valuesByParent.get(theParentForRollup).addAll(values);
 				// } else {
 				//
 				// logger.error("Invalid Semantic Rollup Relationship, no apparent parent " + computedInSE.getName());
@@ -1529,10 +1626,9 @@ public class SemanticParser implements ISemanticParser {
 		}
 
 		for (IElementValue xx : elementValueSet.getAllElementValues()) {
-			System.err.println(xx.getSemanticElement().getName());
+
 			if (xx.getSemanticElement().getParent() != null) {
-				System.err.println(
-					xx.getSemanticElement().getParent().getName() + xx.getSemanticElement().getParent().getUniqueId());
+
 			}
 			// System.err.println(xx.getSemanticElement().getUniqueId());
 		}
