@@ -1136,6 +1136,206 @@ public class MdmiUow implements Runnable {
 		}
 	}
 
+	private ArrayList<IElementValue> collectReferenceMappedElements(Set<IElementValue> whattotransfer) {
+
+		ArrayList<IElementValue> referenceMappedElements = new ArrayList<>();
+		Set<IElementValue> visited = new HashSet<>();
+
+		for (IElementValue elementValue : whattotransfer) {
+			collectReferenceMappedElementsRecursive(elementValue, referenceMappedElements, visited);
+		}
+
+		return referenceMappedElements;
+	}
+
+	private void collectReferenceMappedElementsRecursive(IElementValue elementValue,
+			ArrayList<IElementValue> referenceMappedElements, Set<IElementValue> visited) {
+
+		if (elementValue == null || !visited.add(elementValue)) {
+			return;
+		}
+
+		SemanticElement semanticElement = elementValue.getSemanticElement();
+		System.err.println(semanticElement.getName());
+
+		if (semanticElement != null) {
+			EList<ConversionRule> conversionRules = semanticElement.getMapFromMdmi();
+
+			if (conversionRules != null) {
+				for (ConversionRule conversionRule : conversionRules) {
+					if (conversionRule == null || conversionRule.getRule() == null) {
+						continue;
+					}
+
+					String ruleName = conversionRule.getRule();
+
+					System.err.println(ruleName);
+
+					if (ruleName != null && ruleName.startsWith("REFERENCE")) {
+						referenceMappedElements.add(elementValue);
+						break;
+					}
+				}
+			}
+		}
+
+		// Recursively inspect all children.
+		for (IElementValue child : elementValue.getChildren()) {
+			collectReferenceMappedElementsRecursive(child, referenceMappedElements, visited);
+		}
+	}
+
+	private Set<IElementValue> collectReferenceMappedElementsaa(Set<IElementValue> whattotransfer) {
+
+		Set<IElementValue> referenceMappedElements = new LinkedHashSet<>();
+
+		for (IElementValue elementValue : whattotransfer) {
+			if (elementValue == null || elementValue.getSemanticElement() == null) {
+				continue;
+			}
+
+			SemanticElement semanticElement = elementValue.getSemanticElement();
+
+			EList<ConversionRule> conversionRules = semanticElement.getMapToMdmi();
+
+			if (conversionRules == null) {
+				continue;
+			}
+
+			for (ConversionRule conversionRule : conversionRules) {
+				if (conversionRule == null || conversionRule.getRule() == null) {
+					continue;
+				}
+
+				String rule = conversionRule.getRule();
+
+				if (rule != null && rule.startsWith("REFERENCE")) {
+					referenceMappedElements.add(elementValue);
+					break;
+				}
+			}
+		}
+
+		return referenceMappedElements;
+	}
+
+	private ArrayList<IElementValue> collectFhirIdElements(Set<IElementValue> whattotransfer) {
+
+		ArrayList<IElementValue> fhirIdElements = new ArrayList<>();
+		Set<IElementValue> visited = new HashSet<>();
+
+		for (IElementValue elementValue : whattotransfer) {
+			collectFhirIdElementsRecursive(elementValue, fhirIdElements, visited);
+		}
+
+		return fhirIdElements;
+	}
+
+	private void collectFhirIdElementsRecursive(IElementValue elementValue, ArrayList<IElementValue> fhirIdElements,
+			Set<IElementValue> visited) {
+
+		if (elementValue == null || !visited.add(elementValue)) {
+			return;
+		}
+
+		SemanticElement semanticElement = elementValue.getSemanticElement();
+
+		System.err.println(semanticElement.getDatatype().getName());
+		if (semanticElement != null && semanticElement.getDatatype() != null &&
+				"FHIR_id".equals(semanticElement.getDatatype().getName())) {
+			fhirIdElements.add(elementValue);
+		}
+
+		// Recursively inspect all children.
+		for (IElementValue child : elementValue.getChildren()) {
+			collectFhirIdElementsRecursive(child, fhirIdElements, visited);
+		}
+	}
+
+	private void resolveReferenceMappedElements(Set<IElementValue> whattotransfer) {
+
+		// Collect all reference-mapped elements and FHIR_Id elements recursively.
+		ArrayList<IElementValue> references = new ArrayList<>(collectReferenceMappedElements(whattotransfer));
+
+		ArrayList<IElementValue> fhirIds = new ArrayList<>(collectFhirIdElements(whattotransfer));
+
+		// Process every reference-mapped element.
+		for (IElementValue referenceElement : references) {
+
+			if (!(referenceElement instanceof XElementValue)) {
+				continue;
+			}
+
+			XElementValue reference = (XElementValue) referenceElement;
+			XValue referenceXValue = reference.getXValue();
+
+			if (referenceXValue == null || !(referenceXValue.getValue() instanceof XDataStruct)) {
+				continue;
+			}
+
+			XDataStruct referenceData = (XDataStruct) referenceXValue.getValue();
+
+			XDataStruct referenceStruct = (XDataStruct) referenceData.getValueSafely("reference");
+
+			if (referenceStruct == null) {
+				continue;
+			}
+
+			String referenceValue = (String) referenceStruct.getValue("value");
+
+			if (referenceValue == null) {
+				continue;
+			}
+
+			// Find the FHIR_Id whose value matches the reference.
+			for (IElementValue fhirIdElement : fhirIds) {
+
+				if (!(fhirIdElement instanceof XElementValue)) {
+					continue;
+				}
+
+				XElementValue fhirId = (XElementValue) fhirIdElement;
+				XValue fhirIdXValue = fhirId.getXValue();
+
+				if (fhirIdXValue == null || !(fhirIdXValue.getValue() instanceof XDataStruct)) {
+					continue;
+				}
+
+				XDataStruct fhirIdData = (XDataStruct) fhirIdXValue.getValue();
+
+				String fhirIdValue = (String) fhirIdData.getValue("value");
+
+				if (fhirIdValue == null || !referenceValue.endsWith(fhirIdValue)) {
+					continue;
+				}
+
+				// Clone the parent of the matching FHIR_Id element.
+				IElementValue idParent = fhirId.getParent();
+				IElementValue referenceParent = reference.getParent();
+
+				if (!(idParent instanceof XElementValue) || referenceParent == null) {
+					break;
+				}
+
+				XElementValue clonedParent = ((XElementValue) idParent).clone(true);
+
+				// Attach the cloned element alongside the reference.
+				referenceParent.addChild(clonedParent);
+				clonedParent.setParent(referenceParent);
+
+				// Remove the original ID parent from the transfer collection.
+				whattotransfer.remove(idParent);
+
+				// Remove original elements from the source semantic model.
+				this.srcSemanticModel.removeElementValue(idParent);
+				this.srcSemanticModel.removeElementValue(reference);
+
+				// This reference has been resolved; process the next reference.
+				break;
+			}
+		}
+	}
+
 	void processConversions() {
 
 		this.transferInfo.targetMessage.getUnspecifiedNodes().addAll(
@@ -1302,8 +1502,48 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		ArrayList<SemanticElement> wtfaaa1 = targetSementicElementsByBER.get(foo);
+		if (false) {
 
+			ArrayList<SemanticElement> wtfaaa1 = targetSementicElementsByBER.get(foo);
+
+			// targetSementicElementsByBER.size();
+
+			ArrayList<SemanticElement> wtfaaa3 = targetSementicElementsByBER.get(foo);
+
+			ArrayList<IElementValue> references = collectReferenceMappedElements(whattotransfer);
+
+			XElementValue xxx = (XElementValue) references.get(0);
+			XValue yyy = xxx.getXValue();
+
+			XDataStruct zzz = (XDataStruct) yyy.getValue();
+
+			XDataStruct aaa = (XDataStruct) zzz.getValueSafely("reference");
+
+			String bbb = (String) aaa.getValue("value");
+
+			ArrayList<IElementValue> ccc = collectFhirIdElements(whattotransfer);
+
+			XElementValue ddd = (XElementValue) ccc.get(0);
+			XValue eee = ddd.getXValue();
+
+			XDataStruct fff = (XDataStruct) eee.getValue();
+
+			String ggg = (String) fff.getValue("value");
+
+			if (bbb.endsWith(ggg)) {
+				XElementValue hhh = ((XElementValue) ddd.getParent()).clone(true);
+				xxx.getParent().addChild(hhh);
+				hhh.setParent(xxx.getParent());
+
+				whattotransfer.remove(ddd.getParent());
+				this.srcSemanticModel.removeElementValue(ddd.getParent());
+				this.srcSemanticModel.removeElementValue(xxx);
+				// EcoreUtil.copy(ddd.getParent());
+
+			}
+		}
+
+		resolveReferenceMappedElements(whattotransfer);
 		Set<MDMIBusinessElementReference> sourceBusinessElements = collectContainerBusinessElements(whattotransfer);
 
 		Set<SemanticElement> theTargetContainers = collectMatchingContainerBusinessElementIds(
@@ -1311,11 +1551,14 @@ public class MdmiUow implements Runnable {
 
 		HashMap<String, ArrayList<SemanticElement>> thecollection = buildTargetSemanticElementsByBER(
 			theTargetContainers);
-		// targetSementicElementsByBER.size();
 
-		ArrayList<SemanticElement> wtfaaa3 = targetSementicElementsByBER.get(foo);
+		LogSemantic lgg = new LogSemantic(DIRECTION.TO);
+		lgg.processSemanticModel(this.srcSemanticModel);
 
 		walkTransferElements(whattotransfer, thecollection, impl);
+
+		LogSemantic lggg = new LogSemantic(DIRECTION.FROM);
+		lggg.processSemanticModel(this.trgSemanticModel);
 
 		// Insert target semantic elements that are missing between an existing
 		// XElementValue parent and child. For example, if the semantic model says
