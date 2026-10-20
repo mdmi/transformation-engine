@@ -45,8 +45,6 @@ import org.mdmi.core.ISemanticParser;
 import org.mdmi.core.ISyntaxNode;
 import org.mdmi.core.MdmiException;
 import org.mdmi.core.MdmiUtil;
-import org.mdmi.core.engine.semanticprocessors.LogSemantic;
-import org.mdmi.core.engine.semanticprocessors.LogSemantic.DIRECTION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -635,7 +633,6 @@ public class SemanticParser implements ISemanticParser {
 
 	private void getSimpleElement(YLeaf yleaf, XElementValue owner) {
 
-		System.err.println(yleaf.getNode().getName());
 		SemanticElement me = yleaf.getLeaf().getSemanticElement();
 		if (me == null) {
 			throw new MdmiException("Null SE for node {0}", MdmiUtil.getNodePath(yleaf.getNode()));
@@ -1710,14 +1707,9 @@ public class SemanticParser implements ISemanticParser {
 			containers.put(rootElementValue.getSemanticElement().getName(), rootElementValue);
 		}
 
-		LogSemantic lg = new LogSemantic(DIRECTION.TO);
-		lg.processSemanticModel(elementValueSet);
-
 		watch.split();
 		logger.trace("update all semantic containment: " + watch.toSplitString());
 		normalizeSemantics(mdl, elementValueSet, properties, containers);
-
-		lg.processSemanticModel(elementValueSet);
 
 		walkComputedIn(mdl, elementValueSet, properties, targetValues, containers);
 		watch.split();

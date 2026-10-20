@@ -70,6 +70,13 @@ public class MdmiUow implements Runnable {
 
 	public static Logger logger = LoggerFactory.getLogger(MdmiUow.class);
 
+	private static final Logger WALK_TRANSFER_LOGGER = LoggerFactory.getLogger(
+		"org.mdmi.core.engine.MdmiUow.walkTransferElements");
+
+	HashMap<IElementValue, IElementValue> targetToSource = new HashMap<IElementValue, IElementValue>();
+
+	HashMap<String, ArrayList<IElementValue>> sourcetotarget = new HashMap<String, ArrayList<IElementValue>>();
+
 	MdmiEngine owner;
 
 	MdmiTransferInfo transferInfo;
@@ -176,6 +183,9 @@ public class MdmiUow implements Runnable {
 			watch.split();
 			logger.info("Split processSourceSemanticModel: " + watch.toSplitString());
 
+			LogSemantic lg = new LogSemantic(DIRECTION.FROM);
+			lg.processSemanticModel(this.srcSemanticModel);
+
 			logger.info("Execute processConversions " + Thread.currentThread().getName());
 			processConversions();
 			watch.split();
@@ -197,6 +207,9 @@ public class MdmiUow implements Runnable {
 			watch.split();
 			logger.info("Split postProcess: " + watch.toSplitString());
 			watch.stop();
+
+			LogSemantic targetSemanticLog = new LogSemantic(DIRECTION.TO);
+			targetSemanticLog.processSemanticModel(this.trgSemanticModel);
 
 			logger.info(Thread.currentThread().getName() + " Process Message in MILLISECONDS: " + watch.getTime());
 
@@ -257,8 +270,6 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		logger.debug("Source Syntax Model : \n" + srcSyntaxModel.toString());
-
 		srcSemanticModel = new ElementValueSet();
 
 		srcSemProv.buildSemanticModel(
@@ -267,58 +278,6 @@ public class MdmiUow implements Runnable {
 
 		watch.split();
 		logger.info("buildSemanticModel : " + watch.toSplitString());
-
-	}
-
-	void logElementSet(ElementValueSet srcSemanticModel2) {
-
-		logger.trace("Source Semantic Model ");
-		for (IElementValue elementValue : srcSemanticModel2.getAllElementValues()) {
-			XElementValue aaa = (org.mdmi.core.engine.XElementValue) elementValue;
-			logXElementValue(aaa);
-			if (aaa.getSemanticElement() != null && aaa.getSemanticElement().getSyntaxNode() != null) {
-				if (aaa.getSemanticElement().getSyntaxNode().getParentNode() != null) {
-					if (aaa.getSemanticElement().getSyntaxNode().getParentNode().getParentNode() == null) {
-						logXElementValue(aaa);
-					}
-				}
-			}
-		}
-	}
-
-	void logXElementValue(XElementValue xElementValue) {
-
-		logger.trace("XElementValue " + xElementValue.getName());
-
-		if ("Value918".equals(xElementValue.getName())) {
-			logger.trace("xElementValue.getName()");
-		}
-
-		if (xElementValue.getSemanticElement() != null && xElementValue.getSemanticElement().getSyntaxNode() != null) {
-			logger.trace("LOCATION " + xElementValue.getSemanticElement().getSyntaxNode().getLocation());
-		}
-
-		logXValue(xElementValue.getXValue());
-		for (IElementValue children : xElementValue.getChildren()) {
-			logXElementValue((XElementValue) children);
-		}
-	}
-
-	void logXDataStruct(XDataStruct xDataStruct) {
-		for (XValue value : xDataStruct.getXValues()) {
-			logXValue(value);
-		}
-	}
-
-	void logXValue(XValue xValue) {
-
-		for (Object value : xValue.getValues()) {
-			if (value instanceof XDataStruct) {
-				logXDataStruct((XDataStruct) value);
-			} else {
-				logger.trace("VALUE IS " + value);
-			}
-		}
 
 	}
 
@@ -645,71 +604,72 @@ public class MdmiUow implements Runnable {
 	private void walkTransferElements(Set<IElementValue> whattotransfer,
 			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER, ConversionImpl impl) {
 
-		logger.trace("=== walkTransferElements START ===");
+		WALK_TRANSFER_LOGGER.trace("=== walkTransferElements START ===");
 
 		if (whattotransfer == null || whattotransfer.isEmpty()) {
-			logger.trace("No elements to transfer.");
+			WALK_TRANSFER_LOGGER.trace("No elements to transfer.");
 			return;
 		}
 
-		logger.trace("Elements to transfer: " + whattotransfer.size());
+		WALK_TRANSFER_LOGGER.trace("Elements to transfer: " + whattotransfer.size());
 
 		for (IElementValue element : whattotransfer) {
 
 			if (element == null) {
-				logger.trace("Skipping null transfer element.");
+				WALK_TRANSFER_LOGGER.trace("Skipping null transfer element.");
 				continue;
 			}
 
 			IElementValue parent = element.getParent();
 
-			logger.trace("\nChecking source element: " + element.getUniqueId());
+			WALK_TRANSFER_LOGGER.trace("\nChecking source element: " + element.getUniqueId());
 
-			logger.trace(
+			WALK_TRANSFER_LOGGER.trace(
 				"Source parent: " + (parent != null
 						? parent.getUniqueId()
 						: "null"));
 
 			if (element.getParent() == null || !hasAncestorInWhatToTransfer(element, whattotransfer)) {
 
-				logger.trace(
+				WALK_TRANSFER_LOGGER.trace(
 					"Starting traversal at: " + element.getSemanticElement().getName() + " " + element.getUniqueId());
 
 				walkElement(element, null, targetSementicElementsByBER, impl);
 
 			} else {
-				logger.trace("Skipping element; parent is also " + "in whattotransfer.");
+				WALK_TRANSFER_LOGGER.trace("Skipping element; parent is also " + "in whattotransfer.");
 			}
 		}
 
-		logger.trace("=== walkTransferElements END ===");
+		WALK_TRANSFER_LOGGER.trace("=== walkTransferElements END ===");
 	}
 
 	private void walkElement(IElementValue sourceElement, XElementValue targetParent,
 			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER, ConversionImpl impl) {
 
 		if (sourceElement == null) {
-			logger.trace("walkElement: source element is null.");
+			WALK_TRANSFER_LOGGER.trace("walkElement: source element is null.");
 			return;
 		}
 
 		SemanticElement sourceSemantic = sourceElement.getSemanticElement();
 
 		if (sourceSemantic == null) {
-			logger.trace("Source semantic element is null for " + sourceElement.getUniqueId());
+			WALK_TRANSFER_LOGGER.trace("Source semantic element is null for " + sourceElement.getUniqueId());
 			return;
 		}
 
-		logger.trace("\n----------------------------------------");
-		logger.trace("Source element: " + sourceSemantic.getName() + " [uniqueId=" + sourceElement.getUniqueId() + "]");
+		WALK_TRANSFER_LOGGER.trace("\n----------------------------------------");
+		WALK_TRANSFER_LOGGER.trace(
+			"Source element: " + sourceSemantic.getName() + " [uniqueId=" + sourceElement.getUniqueId() + "]");
 
-		logger.trace(
+		WALK_TRANSFER_LOGGER.trace(
 			"Target parent: " + (targetParent != null
 					? targetParent.getUniqueId()
 					: "null"));
 
 		if (sourceSemantic.getMapToMdmi() == null || sourceSemantic.getMapToMdmi().isEmpty()) {
-			logger.trace("No conversion rules for " + sourceSemantic.getName());
+			WALK_TRANSFER_LOGGER.trace("No conversion rules for " + sourceSemantic.getName());
 
 			if (sourceElement.getChildren() != null && !sourceElement.getChildren().isEmpty()) {
 
@@ -718,7 +678,7 @@ public class MdmiUow implements Runnable {
 				// targetElement.getUniqueId());
 
 				for (IElementValue child : sourceElement.getChildren()) {
-					logger.trace(
+					WALK_TRANSFER_LOGGER.trace(
 						"Recursing into child: " + (child != null
 								? child.getUniqueId()
 								: "null"));
@@ -734,30 +694,33 @@ public class MdmiUow implements Runnable {
 
 				ruleIndex++;
 
-				logger.trace("\nProcessing conversion rule " + ruleIndex);
+				WALK_TRANSFER_LOGGER.trace("\nProcessing conversion rule " + ruleIndex);
 
 				if (tme == null || tme.getBusinessElement() == null) {
-					logger.trace("Conversion rule or business element " + "is null; skipping.");
+					WALK_TRANSFER_LOGGER.trace("Conversion rule or business element " + "is null; skipping.");
 					continue;
 				}
 
 				String ber = tme.getBusinessElement().getUniqueIdentifier();
 
-				logger.trace("Business element BER: " + tme.getBusinessElement().getName() + "[" + ber + "]");
+				WALK_TRANSFER_LOGGER.trace(
+					"Business element BER: " + tme.getBusinessElement().getName() + "[" + ber + "]");
 
 				ArrayList<SemanticElement> targetSemanticElements = targetSementicElementsByBER.get(ber);
 
 				if (targetSemanticElements == null || targetSemanticElements.isEmpty()) {
-					logger.trace("No targets found for BER: " + ber);
+					WALK_TRANSFER_LOGGER.trace("No targets found for BER: " + ber);
 
 					if (sourceElement.getChildren() != null && !sourceElement.getChildren().isEmpty()) {
 
-						logger.trace(
+						WALK_TRANSFER_LOGGER.trace(
 							"Processing " + sourceElement.getChildren().size() + " source children under target " +
-									targetParent.getUniqueId());
+									(targetParent != null
+											? targetParent.getUniqueId()
+											: "null"));
 
 						for (IElementValue child : sourceElement.getChildren()) {
-							logger.trace(
+							WALK_TRANSFER_LOGGER.trace(
 								"Recursing into child: " + (child != null
 										? child.getUniqueId()
 										: "null"));
@@ -768,8 +731,7 @@ public class MdmiUow implements Runnable {
 					}
 					continue;
 				}
-
-				logger.trace("Matching target semantic elements: " + targetSemanticElements.size());
+				WALK_TRANSFER_LOGGER.trace("Matching target semantic elements: " + targetSemanticElements.size());
 
 				int targetIndex = 0;
 
@@ -778,11 +740,11 @@ public class MdmiUow implements Runnable {
 					targetIndex++;
 
 					if (targetSemanticElement == null) {
-						logger.trace("Target " + targetIndex + " is null; skipping.");
+						WALK_TRANSFER_LOGGER.trace("Target " + targetIndex + " is null; skipping.");
 						continue;
 					}
 
-					logger.trace(
+					WALK_TRANSFER_LOGGER.trace(
 						"\nChecking target " + targetIndex + ": " + targetSemanticElement.getName() + " [uniqueId=" +
 								targetSemanticElement.getUniqueId() + "]");
 
@@ -794,7 +756,7 @@ public class MdmiUow implements Runnable {
 
 						if (parentSemantic == null || !containsSemanticElement(parentSemantic, targetSemanticElement)) {
 
-							logger.trace(
+							WALK_TRANSFER_LOGGER.trace(
 								"Skipping target " + targetSemanticElement.getName() +
 										": it is not a descendant of target parent " + (parentSemantic != null
 												? parentSemantic.getName()
@@ -803,11 +765,11 @@ public class MdmiUow implements Runnable {
 							continue;
 						}
 
-						logger.trace("Target is a descendant of " + parentSemantic.getName());
+						WALK_TRANSFER_LOGGER.trace("Target is a descendant of " + parentSemantic.getName());
 					} else if (targetParent == null) {
-						logger.trace("No target parent; descendant " + "check is not applicable.");
+						WALK_TRANSFER_LOGGER.trace("No target parent; descendant " + "check is not applicable.");
 					} else {
-						logger.trace("Target is a Container; " + "descendant check is bypassed.");
+						WALK_TRANSFER_LOGGER.trace("Target is a Container; " + "descendant check is bypassed.");
 					}
 
 					// Create a new target XElementValue for this rule/target.
@@ -815,28 +777,28 @@ public class MdmiUow implements Runnable {
 						targetParent, sourceElement, targetSemanticElement, impl, tme);
 
 					if (targetElement == null) {
-						logger.trace("XElementValue creation failed.");
+						WALK_TRANSFER_LOGGER.trace("XElementValue creation failed.");
 						continue;
 					}
 
-					logger.trace("Created target XElementValue: " + targetElement.getUniqueId());
+					WALK_TRANSFER_LOGGER.trace("Created target XElementValue: " + targetElement.getUniqueId());
 
 					if (targetParent != null) {
 						targetElement.setParent(targetParent);
 
-						logger.trace("Set target parent: " + targetParent.getUniqueId());
+						WALK_TRANSFER_LOGGER.trace("Set target parent: " + targetParent.getUniqueId());
 					}
 
 					// Process each source child independently under this
 					// newly created target element.
 					if (sourceElement.getChildren() != null && !sourceElement.getChildren().isEmpty()) {
 
-						logger.trace(
+						WALK_TRANSFER_LOGGER.trace(
 							"Processing " + sourceElement.getChildren().size() + " source children under target " +
 									targetElement.getUniqueId());
 
 						for (IElementValue child : sourceElement.getChildren()) {
-							logger.trace(
+							WALK_TRANSFER_LOGGER.trace(
 								"Recursing into child: " + (child != null
 										? child.getUniqueId()
 										: "null"));
@@ -844,13 +806,13 @@ public class MdmiUow implements Runnable {
 							walkElement(child, targetElement, targetSementicElementsByBER, impl);
 						}
 					} else {
-						logger.trace("No source children for " + sourceElement.getUniqueId());
+						WALK_TRANSFER_LOGGER.trace("No source children for " + sourceElement.getUniqueId());
 					}
 				}
 			}
 		}
 
-		logger.trace("walkElement END: " + sourceElement.getUniqueId());
+		WALK_TRANSFER_LOGGER.trace("walkElement END: " + sourceElement.getUniqueId());
 	}
 
 	private boolean containsSemanticElement(SemanticElement parent, SemanticElement target) {
@@ -859,11 +821,12 @@ public class MdmiUow implements Runnable {
 			return false;
 		}
 
-		logger.trace("Checking semantic hierarchy: parent=" + parent.getName() + ", target=" + target.getName());
+		WALK_TRANSFER_LOGGER.trace(
+			"Checking semantic hierarchy: parent=" + parent.getName() + ", target=" + target.getName());
 
 		// Compare unique IDs rather than Java object references.
 		if (parent.getUniqueId().equals(target.getUniqueId())) {
-			logger.trace("Semantic element matched: " + target.getName());
+			WALK_TRANSFER_LOGGER.trace("Semantic element matched: " + target.getName());
 			return true;
 		}
 
@@ -896,6 +859,15 @@ public class MdmiUow implements Runnable {
 			@SuppressWarnings("deprecation")
 			org.mdmi.core.engine.ConversionInvocation ci = new org.mdmi.core.engine.ConversionInvocation(
 				targetSemanticElement, tme.getBusinessElement(), tme.getBusinessElement());
+
+			targetToSource.put(targetElementValue, sourceElementValue);
+
+			if (!sourcetotarget.containsKey(((XElementValue) sourceElementValue).getUniqueId())) {
+				sourcetotarget.put(((XElementValue) sourceElementValue).getUniqueId(), new ArrayList<>());
+			}
+			sourcetotarget.get(((XElementValue) sourceElementValue).getUniqueId()).add(targetElementValue);
+			// sourcetotarget.computeIfAbsent(sourceElementValue, k -> new ArrayList<>()).add(targetElementValue);
+
 			impl.convert((XElementValue) sourceElementValue, ci, targetElementValue);
 			if (targetParent != null) {
 				targetElementValue.setParent(targetParent);
@@ -1021,79 +993,6 @@ public class MdmiUow implements Runnable {
 		return businessElements;
 	}
 
-	private Set<SemanticElement> collectMatchingContainerBusinessElementIdsss(
-			Set<MDMIBusinessElementReference> containerBusinessElements,
-			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER) {
-
-		Set<SemanticElement> matchingContainerElements = new LinkedHashSet<>();
-		Set<String> processedContainerIds = new HashSet<>();
-
-		for (MDMIBusinessElementReference businessElement : containerBusinessElements) {
-			if (businessElement == null) {
-				continue;
-			}
-
-			String uniqueId = businessElement.getUniqueIdentifier();
-
-			ArrayList<SemanticElement> targetElements = targetSementicElementsByBER.get(uniqueId);
-
-			if (targetElements == null) {
-				continue;
-			}
-
-			for (SemanticElement targetElement : targetElements) {
-				if (targetElement == null || targetElement.getDatatype() == null) {
-					continue;
-				}
-
-				if (!"Container".equals(targetElement.getDatatype().getName())) {
-					continue;
-				}
-
-				String containerId = targetElement.getUniqueId();
-
-				if (processedContainerIds.add(containerId)) {
-					matchingContainerElements.add(targetElement);
-				}
-			}
-		}
-
-		return matchingContainerElements;
-	}
-
-	private Set<SemanticElement> collectMatchingContainerBusinessElementIdsA(
-			Set<MDMIBusinessElementReference> containerBusinessElements,
-			HashMap<String, ArrayList<SemanticElement>> targetSementicElementsByBER) {
-
-		Set<SemanticElement> matchingContainerElements = new LinkedHashSet<>();
-
-		for (MDMIBusinessElementReference businessElement : containerBusinessElements) {
-			if (businessElement == null) {
-				continue;
-			}
-
-			String uniqueId = businessElement.getUniqueIdentifier();
-
-			ArrayList<SemanticElement> targetElements = targetSementicElementsByBER.get(uniqueId);
-
-			if (targetElements == null) {
-				continue;
-			}
-
-			for (SemanticElement targetElement : targetElements) {
-				if (targetElement == null || targetElement.getDatatype() == null) {
-					continue;
-				}
-
-				if ("Container".equals(targetElement.getDatatype().getName())) {
-					matchingContainerElements.add(targetElement);
-				}
-			}
-		}
-
-		return matchingContainerElements;
-	}
-
 	private HashMap<String, ArrayList<SemanticElement>> buildTargetSemanticElementsByBER(
 			Set<SemanticElement> theTargetContainers) {
 
@@ -1120,6 +1019,10 @@ public class MdmiUow implements Runnable {
 		if (conversionRules != null) {
 			for (ConversionRule conversionRule : conversionRules) {
 				if (conversionRule == null || conversionRule.getBusinessElement() == null) {
+					continue;
+				}
+
+				if (conversionRule.getRule() != null && conversionRule.getRule().startsWith("REFERENCE")) {
 					continue;
 				}
 
@@ -1155,7 +1058,6 @@ public class MdmiUow implements Runnable {
 		}
 
 		SemanticElement semanticElement = elementValue.getSemanticElement();
-		logger.trace(semanticElement.getName());
 
 		if (semanticElement != null) {
 			EList<ConversionRule> conversionRules = semanticElement.getMapFromMdmi();
@@ -1167,8 +1069,6 @@ public class MdmiUow implements Runnable {
 					}
 
 					String ruleName = conversionRule.getRule();
-
-					logger.trace(ruleName);
 
 					if (ruleName != null && ruleName.startsWith("REFERENCE")) {
 						referenceMappedElements.add(elementValue);
@@ -1182,40 +1082,6 @@ public class MdmiUow implements Runnable {
 		for (IElementValue child : elementValue.getChildren()) {
 			collectReferenceMappedElementsRecursive(child, referenceMappedElements, visited);
 		}
-	}
-
-	private Set<IElementValue> collectReferenceMappedElementsaa(Set<IElementValue> whattotransfer) {
-
-		Set<IElementValue> referenceMappedElements = new LinkedHashSet<>();
-
-		for (IElementValue elementValue : whattotransfer) {
-			if (elementValue == null || elementValue.getSemanticElement() == null) {
-				continue;
-			}
-
-			SemanticElement semanticElement = elementValue.getSemanticElement();
-
-			EList<ConversionRule> conversionRules = semanticElement.getMapToMdmi();
-
-			if (conversionRules == null) {
-				continue;
-			}
-
-			for (ConversionRule conversionRule : conversionRules) {
-				if (conversionRule == null || conversionRule.getRule() == null) {
-					continue;
-				}
-
-				String rule = conversionRule.getRule();
-
-				if (rule != null && rule.startsWith("REFERENCE")) {
-					referenceMappedElements.add(elementValue);
-					break;
-				}
-			}
-		}
-
-		return referenceMappedElements;
 	}
 
 	private ArrayList<IElementValue> collectFhirIdElements(Set<IElementValue> whattotransfer) {
@@ -1239,7 +1105,6 @@ public class MdmiUow implements Runnable {
 
 		SemanticElement semanticElement = elementValue.getSemanticElement();
 
-		logger.trace(semanticElement.getDatatype().getName());
 		if (semanticElement != null && semanticElement.getDatatype() != null &&
 				"FHIR_id".equals(semanticElement.getDatatype().getName())) {
 			fhirIdElements.add(elementValue);
@@ -1381,7 +1246,7 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.info("match : " + watch.toSplitString());
 
-		ConversionImpl impl = new ConversionImpl(trgSemanticModel);
+		ConversionImpl impl = new ConversionImpl(trgSemanticModel, sourcetotarget);
 
 		impl.initializeDI(
 			transferInfo.sourceModel.getGroup(), transferInfo.targetModel.getGroup(), transferInfo.sourceProperties,
@@ -1410,11 +1275,7 @@ public class MdmiUow implements Runnable {
 							tme.getBusinessElement().getUniqueIdentifier(), new ArrayList<SemanticElement>());
 
 					}
-					if ("RequestCategoryCode2000E".equals(targetSementicElement.getName())) {
-						logger.trace("aaaa" + targetSementicElement.getUniqueId());
-						foo = tme.getBusinessElement().getUniqueIdentifier();
-						logger.trace(foo);
-					}
+
 					targetSementicElementsByBER.get(tme.getBusinessElement().getUniqueIdentifier()).add(
 						targetSementicElement);
 				}
@@ -1501,47 +1362,6 @@ public class MdmiUow implements Runnable {
 			}
 		}
 
-		if (false) {
-
-			ArrayList<SemanticElement> wtfaaa1 = targetSementicElementsByBER.get(foo);
-
-			// targetSementicElementsByBER.size();
-
-			ArrayList<SemanticElement> wtfaaa3 = targetSementicElementsByBER.get(foo);
-
-			ArrayList<IElementValue> references = collectReferenceMappedElements(whattotransfer);
-
-			XElementValue xxx = (XElementValue) references.get(0);
-			XValue yyy = xxx.getXValue();
-
-			XDataStruct zzz = (XDataStruct) yyy.getValue();
-
-			XDataStruct aaa = (XDataStruct) zzz.getValueSafely("reference");
-
-			String bbb = (String) aaa.getValue("value");
-
-			ArrayList<IElementValue> ccc = collectFhirIdElements(whattotransfer);
-
-			XElementValue ddd = (XElementValue) ccc.get(0);
-			XValue eee = ddd.getXValue();
-
-			XDataStruct fff = (XDataStruct) eee.getValue();
-
-			String ggg = (String) fff.getValue("value");
-
-			if (bbb.endsWith(ggg)) {
-				XElementValue hhh = ((XElementValue) ddd.getParent()).clone(true);
-				xxx.getParent().addChild(hhh);
-				hhh.setParent(xxx.getParent());
-
-				whattotransfer.remove(ddd.getParent());
-				this.srcSemanticModel.removeElementValue(ddd.getParent());
-				this.srcSemanticModel.removeElementValue(xxx);
-				// EcoreUtil.copy(ddd.getParent());
-
-			}
-		}
-
 		resolveReferenceMappedElements(whattotransfer);
 		Set<MDMIBusinessElementReference> sourceBusinessElements = collectContainerBusinessElements(whattotransfer);
 
@@ -1551,22 +1371,16 @@ public class MdmiUow implements Runnable {
 		HashMap<String, ArrayList<SemanticElement>> thecollection = buildTargetSemanticElementsByBER(
 			theTargetContainers);
 
-		LogSemantic lgg = new LogSemantic(DIRECTION.TO);
-		lgg.processSemanticModel(this.srcSemanticModel);
-
 		walkTransferElements(whattotransfer, thecollection, impl);
 
-		LogSemantic lggg = new LogSemantic(DIRECTION.FROM);
-		lggg.processSemanticModel(this.trgSemanticModel);
+		// targetToSource.forEach((key, value) -> sourceToTarget.put(value, key));
 
 		// Insert target semantic elements that are missing between an existing
 		// XElementValue parent and child. For example, if the semantic model says
 		// A -> B -> C but the transfer created A -> C, create a B XElementValue
 		// and repair the runtime tree to A -> B -> C.
-		printElementTree(this.trgSemanticModel.getAllElementValues());
-		fillInSemanticPathElements();
 
-		printElementTree(this.trgSemanticModel.getAllElementValues());
+		fillInSemanticPathElements();
 
 		List<IElementValue> trgValues = trgSemanticModel.getAllElementValues();
 		List<IElementValue> srcValues = srcSemanticModel.getAllElementValues();
@@ -1597,7 +1411,7 @@ public class MdmiUow implements Runnable {
 		}
 
 		ReferenceBuildingVisitor visitor = new ReferenceBuildingVisitor(
-			trgValues, new HashMap<IElementValue, IElementValue>(), referencesToCreate, logger);
+			trgValues, targetToSource, referencesToCreate, logger);
 
 		for (IElementValue trgVal : trgValues) {
 			trgVal.accept(visitor);
@@ -1611,11 +1425,11 @@ public class MdmiUow implements Runnable {
 		for (Reference r : referencesToCreate) {
 			try {
 				for (ConversionRule tme : r.getSource().getSemanticElement().getMapToMdmi()) {
-					for (ConversionRule tmo : r.getTarget().getMapToMdmi()) {
-						if (!tme.getBusinessElement().getUniqueIdentifier().equals(
-							tmo.getBusinessElement().getUniqueIdentifier())) {
-							continue;
-						}
+					for (ConversionRule tmo : r.getTarget().getMapFromMdmi()) {
+						// if (!tme.getBusinessElement().getUniqueIdentifier().equals(
+						// tmo.getBusinessElement().getUniqueIdentifier())) {
+						// continue;
+						// }
 						logger.trace("Create Reference Source Element" + r.getSource().getName());
 						logger.trace("Create Reference Target Semantic Element " + r.getTarget().getName());
 						logger.trace("Create Reference Parent " + r.getParent().getName());
@@ -1731,12 +1545,6 @@ public class MdmiUow implements Runnable {
 		watch.split();
 		logger.trace("singles : " + watch.toSplitString());
 
-		printElementTree(this.trgSemanticModel.getAllElementValues());
-
-		printElementTree(this.trgSemanticModel.getAllElementValues());
-		LogSemantic lg = new LogSemantic(DIRECTION.TO);
-		lg.processSemanticModel(this.trgSemanticModel);
-
 		ListIterator<IElementValue> iterator = trgSemanticModel.getAllElementValues().listIterator();
 
 		while (iterator.hasNext()) {
@@ -1842,6 +1650,7 @@ public class MdmiUow implements Runnable {
 		}
 
 		watch.split();
+
 		logger.trace("Done : " + watch.toSplitString());
 
 	}
@@ -2229,59 +2038,6 @@ public class MdmiUow implements Runnable {
 		this.srcSyntaxModel = null;
 		this.trgSyntaxModel = null;
 
-	}
-
-	public void printElementTree(List<IElementValue> elementValues) {
-		Set<String> printedIds = new HashSet<>();
-
-		for (IElementValue elementValue : elementValues) {
-			if (elementValue.getParent() == null) {
-				printElementTree(elementValue, 0, printedIds);
-			}
-		}
-
-		// Verify that every element in the original list was printed
-		for (IElementValue elementValue : elementValues) {
-			String uniqueId = elementValue.getUniqueId();
-
-			if (!printedIds.contains(uniqueId)) {
-				logger.trace("NOT PRINTED: " + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
-			}
-		}
-
-		logger.trace("Total elements: " + elementValues.size());
-		logger.trace("Printed elements: " + printedIds.size());
-		logger.trace("All elements printed: " + (printedIds.size() == elementValues.size()));
-	}
-
-	private void printElementTree(IElementValue elementValue, int depth, Set<String> printedIds) {
-
-		if (elementValue == null) {
-			return;
-		}
-
-		String uniqueId = elementValue.getUniqueId();
-
-		// Prevent duplicate printing and infinite recursion
-		if (!printedIds.add(uniqueId)) {
-			return;
-		}
-
-		String indent = "  ".repeat(depth);
-
-		logger.trace(indent + getSemanticName(elementValue) + " [uniqueId=" + uniqueId + "]");
-
-		if (elementValue.getChildren() != null) {
-			for (IElementValue child : elementValue.getChildren()) {
-				printElementTree(child, depth + 1, printedIds);
-			}
-		}
-	}
-
-	private String getSemanticName(IElementValue elementValue) {
-		return elementValue.getSemanticElement() != null
-				? elementValue.getSemanticElement().getName()
-				: "null";
 	}
 
 } // MdmiUow

@@ -47,23 +47,23 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 	static final int ERROR = 1;
 
 	public void log(String msg, StringBuffer sb) {
-		switch (level) {
-			case TRACE:
-				logger.trace(msg);
-				break;
-			case DEBUG:
-				logger.debug(msg);
-				break;
-			case INFO:
-				logger.info(msg);
-				break;
-			case WARN:
-				logger.warn(msg);
-				break;
-			case ERROR:
-				logger.error(msg);
-				break;
-		}
+		// switch (level) {
+		// case TRACE:
+		// logger.trace(msg);
+		// break;
+		// case DEBUG:
+		// logger.debug(msg);
+		// break;
+		// case INFO:
+		// logger.info(msg);
+		// break;
+		// case WARN:
+		// logger.warn(msg);
+		// break;
+		// case ERROR:
+		// logger.error(msg);
+		// break;
+		// }
 		sb.append(msg).append(System.lineSeparator());
 	}
 

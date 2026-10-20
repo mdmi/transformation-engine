@@ -64,15 +64,12 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 	public void visit(IElementValue trgVal) {
 
 		if (!visited.add(trgVal)) {
-			logger.trace("Cycle detected at {}", trgVal.getSemanticElement().getName());
 			return;
 		}
 
 		if (!isContainer(trgVal)) {
 			return;
 		}
-
-		logger.trace("Target Container to check " + trgVal.getSemanticElement().getName());
 
 		SemanticElement trgSemantic = trgVal.getSemanticElement();
 
@@ -83,17 +80,11 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 					continue;
 				}
 
-				logger.trace("Target Container to check " + child.getName());
-
 				IElementValue sourceElement = targetToSource.get(trgVal);
-
-				logger.trace("Target References to " + child.getName());
 
 				if (sourceElement == null) {
 					continue;
 				}
-
-				logger.trace("sourceElement " + sourceElement.getSemanticElement().getName());
 
 				if (child.isMultipleInstances()) {
 					handleMultiple(trgVal, sourceElement, child, refRule);
@@ -145,8 +136,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 				continue;
 			}
 
-			logger.trace("Checking src elements " + srcChild.getSemanticElement().getName());
-
 			for (ConversionRule subRule : srcChild.getSemanticElement().getMapToMdmi()) {
 
 				if (matches(refRule, subRule)) {
@@ -157,28 +146,6 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 			}
 
 			visitSourceChildren(trgVal, srcChild, child, refRule, visited);
-		}
-	}
-
-	private void handleMultiples(IElementValue trgVal, IElementValue sourceElement, SemanticElement child,
-			ConversionRule refRule) {
-
-		for (IElementValue srcChild : sourceElement.getChildren()) {
-
-			if (!isContainer(srcChild)) {
-				continue;
-			}
-
-			logger.trace("Checking src elements " + srcChild.getSemanticElement().getName());
-
-			for (ConversionRule subRule : srcChild.getSemanticElement().getMapToMdmi()) {
-
-				if (matches(refRule, subRule)) {
-					logger.trace("Found Matching Reference {}", srcChild.getSemanticElement().getName());
-
-					referencesToCreate.add(new Reference(trgVal, srcChild, child));
-				}
-			}
 		}
 	}
 

@@ -36,6 +36,7 @@ import org.mdmi.MessageGroup;
 import org.mdmi.Node;
 import org.mdmi.SemanticElement;
 import org.mdmi.core.ElementValueSet;
+import org.mdmi.core.IElementValue;
 import org.mdmi.core.Mdmi;
 import org.mdmi.core.MdmiResolver.MI;
 import org.mdmi.core.MdmiValueSet;
@@ -62,7 +63,7 @@ public class ConversionImpl {
 
 	boolean first = true;
 
-	// HashMap<IElementValue, ArrayList<IElementValue>> sourcetotarget;
+	HashMap<String, ArrayList<IElementValue>> sourcetotarget;
 	//
 	// HashMap<IElementValue, IElementValue> targettosource;
 
@@ -73,11 +74,13 @@ public class ConversionImpl {
 	 * @param targettosource
 	 * @param trgSemanticModel
 	 */
-	public ConversionImpl(ElementValueSet trgSemanticModel) {
-		// this.sourcetotarget = sourcetotarget;
+	public ConversionImpl(ElementValueSet trgSemanticModel, HashMap<String, ArrayList<IElementValue>> sourcetotarget) {
+		this.sourcetotarget = sourcetotarget;
 		// this.targettosource = targettosource;
 		this.trgSemanticModel = trgSemanticModel;
 	}
+
+	// ConversionImpl(ElementValueSet, HashMap<IElementValue,IElementValue>)
 
 	private static String parseFunctionName(String rule) {
 
@@ -397,25 +400,28 @@ public class ConversionImpl {
 
 			if (toSE.getRule().endsWith("REVERSE")) {
 
-				// if (sourceSemanticElement.getParent() != null &&
-				// sourcetotarget.containsKey(sourceSemanticElement.getParent())) {
-				// guidValue = "urn:uuid:" +
-				// sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
-				//
-				// } else {
-				// }
+				if (sourceSemanticElement.getParent() != null &&
+						sourcetotarget.containsKey(sourceSemanticElement.getParent())) {
+					guidValue = "urn:uuid:" +
+							sourcetotarget.get(sourceSemanticElement.getParent()).get(0).getUniqueId();
+
+				} else {
+				}
 
 			} else {
 
-				// if (trg.getSemanticElement().isMultipleInstances()) {
-				// if (sourceSemanticElement != null && sourcetotarget.containsKey(sourceSemanticElement)) {
-				// guidValue = "urn:uuid:" + sourcetotarget.get(sourceSemanticElement).get(0).getUniqueId();
-				//
-				// }
-				// } else {
+				if (trg.getSemanticElement().isMultipleInstances()) {
 
-				guidValue = "urn:uuid:" + sourceSemanticElement.getUniqueId();
-				// }
+					if (sourceSemanticElement != null &&
+							sourcetotarget.containsKey(sourceSemanticElement.getUniqueId())) {
+						guidValue = "urn:uuid:" +
+								sourcetotarget.get(sourceSemanticElement.getUniqueId()).get(0).getUniqueId();
+
+					}
+				} else {
+
+					guidValue = "urn:uuid:" + sourceSemanticElement.getUniqueId();
+				}
 			}
 
 			guid.setValue(guidValue);
