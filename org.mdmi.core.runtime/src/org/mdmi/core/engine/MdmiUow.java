@@ -1188,11 +1188,11 @@ public class MdmiUow implements Runnable {
 				clonedParent.setParent(referenceParent);
 
 				// Remove the original ID parent from the transfer collection.
-				whattotransfer.remove(idParent);
+				// whattotransfer.remove(idParent);
 
 				// Remove original elements from the source semantic model.
-				this.srcSemanticModel.removeElementValue(idParent);
-				this.srcSemanticModel.removeElementValue(reference);
+				// this.srcSemanticModel.removeElementValue(idParent);
+				// this.srcSemanticModel.removeElementValue(reference);
 
 				// This reference has been resolved; process the next reference.
 				break;
@@ -1606,6 +1606,7 @@ public class MdmiUow implements Runnable {
 								} else {
 									impl.targetProperties.put("VALUESET", Collections.EMPTY_SET);
 								}
+								System.err.println(qualifierFunction);
 								if (!impl.targetDatamapInterpreter.execute(
 									qualifierFunction, child, impl.targetProperties)) {
 									tobedeleted.add(targetElementValue);
