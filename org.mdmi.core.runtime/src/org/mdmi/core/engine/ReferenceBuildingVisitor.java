@@ -74,6 +74,7 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 		SemanticElement trgSemantic = trgVal.getSemanticElement();
 
 		for (SemanticElement child : trgSemantic.getChildren()) {
+
 			for (ConversionRule refRule : child.getMapFromMdmi()) {
 
 				if (!isReferenceRule(refRule)) {
@@ -141,12 +142,23 @@ public class ReferenceBuildingVisitor implements ElementValueVisitor {
 				if (matches(refRule, subRule)) {
 					logger.trace("Found Matching Reference {}", srcChild.getSemanticElement().getName());
 
-					referencesToCreate.add(new Reference(trgVal, srcChild, child));
+					IElementValue target = null;
+					for (IElementValue value : targetToSource.values()) {
+						if (value.equals(srcChild)) {
+							target = value;
+							break;
+						}
+
+					}
+					if (target != null) {
+						referencesToCreate.add(new Reference(trgVal, target, child));
+					}
 				}
 			}
 
 			visitSourceChildren(trgVal, srcChild, child, refRule, visited);
 		}
+
 	}
 
 	private void handleSingle(IElementValue trgVal, SemanticElement child, ConversionRule refRule) {

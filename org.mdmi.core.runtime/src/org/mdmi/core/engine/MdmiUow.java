@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -1417,13 +1416,59 @@ public class MdmiUow implements Runnable {
 			trgVal.accept(visitor);
 		}
 
-		Set<String> semanticReferences = referencesToCreate.stream().map(
-			r -> r.target == null
-					? null
-					: r.target.getUniqueId()).filter(Objects::nonNull).collect(Collectors.toSet());
-
 		for (Reference r : referencesToCreate) {
 			try {
+				boolean skip = false;
+
+				if (!r.getTarget().getPropertyQualifier().isEmpty()) {
+					String propertyQualifier = r.getTarget().getPropertyQualifier().get(0);
+					String sourceElementName = r.getSource().getSemanticElement().getName();
+
+					for (IElementValue child : r.getSource().getChildren()) {
+						String childElementName = child.getSemanticElement().getName();
+
+						if ("Meta".equals(childElementName)) {
+							XValue metaValue = (XValue) child.getXValue();
+							XDataStruct profileData = (XDataStruct) metaValue.getValueByName("profile");
+
+							String profileValue = profileData.getXValueAsString("value").trim();
+
+							if (!propertyQualifier.endsWith(profileValue)) {
+								skip = true;
+							}
+						}
+					}
+
+					if (skip) {
+						continue;
+					}
+				}
+
+				// if (!r.getTarget().getPropertyQualifier().isEmpty()) {
+				// System.err.println(r.getSource().getSemanticElement().getName());
+				// String pq = r.getTarget().getPropertyQualifier().get(0);
+				// for (IElementValue child : r.getSource().getChildren()) {
+				// System.err.println("Children " + child.getSemanticElement().getName());
+				// if ("Meta".equals(child.getSemanticElement().getName())) {
+				// XValue ccc = (XValue) child.getXValue();
+				// XDataStruct kkk = (XDataStruct) ccc.getValueByName("profile");
+				// System.err.println("META " + kkk.getXValueAsString("value"));
+				// System.err.println("PQ" + pq);
+				// System.err.println("META " + kkk.getXValueAsString("value"));
+				//
+				// if (!pq.endsWith(kkk.getXValueAsString("value"))) {
+				// skip = true;
+				// }
+				// }
+				// }
+				// if (skip) {
+				// continue;
+				// }
+				// }
+				// if (!impl.targetDatamapInterpreter.execute("ISSoemthing", r.getParent(), impl.targetProperties)) {
+				// System.out.println("HERE");
+				// }
+
 				for (ConversionRule tme : r.getSource().getSemanticElement().getMapToMdmi()) {
 					for (ConversionRule tmo : r.getTarget().getMapFromMdmi()) {
 						// if (!tme.getBusinessElement().getUniqueIdentifier().equals(
@@ -1606,7 +1651,6 @@ public class MdmiUow implements Runnable {
 								} else {
 									impl.targetProperties.put("VALUESET", Collections.EMPTY_SET);
 								}
-								System.err.println(qualifierFunction);
 								if (!impl.targetDatamapInterpreter.execute(
 									qualifierFunction, child, impl.targetProperties)) {
 									tobedeleted.add(targetElementValue);

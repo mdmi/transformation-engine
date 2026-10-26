@@ -188,7 +188,6 @@ public class SemanticInterpreter {
 
 		try {
 			if (logger.isTraceEnabled()) {
-				logger.trace(sb.toString());
 				try {
 					Files.write(
 						Paths.get("./logs/" + messgaeGroup.getName() + "semanticRollups.js"), sb.toString().getBytes());
