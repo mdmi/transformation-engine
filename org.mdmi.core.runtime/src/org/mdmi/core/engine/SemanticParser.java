@@ -157,14 +157,14 @@ public class SemanticParser implements ISemanticParser {
 		getElements((YNode) yroot);
 		logSplit(watch, "getElements");
 
-		printElementTree(valueSet.getAllElementValues());
+		// printElementTree(valueSet.getAllElementValues());
 
 		for (IElementValue xe : valueSet.getAllElementValues()) {
 			setRelations((XElementValue) xe);
 		}
 		logSplit(watch, "set relationships");
 
-		printElementTree(valueSet.getAllElementValues());
+		// printElementTree(valueSet.getAllElementValues());
 
 		List<IElementValue> foundElements = new ArrayList<>();
 		for (IElementValue ses : eset.getAllElementValues()) {
@@ -172,7 +172,7 @@ public class SemanticParser implements ISemanticParser {
 				foundElements.add(ses);
 			}
 		}
-		printElementTree(valueSet.getAllElementValues());
+		// printElementTree(valueSet.getAllElementValues());
 		logSplit(watch, "collect container elements (found=" + foundElements.size() + ")");
 
 		for (IElementValue elementValue : foundElements) {
@@ -1124,7 +1124,7 @@ public class SemanticParser implements ISemanticParser {
 			 *
 			 */
 
-			printElementTree(valueSet.getAllElementValues());
+			// printElementTree(valueSet.getAllElementValues());
 
 			logger.trace("Processing SEMANTICROLLUP " + computedInSE.getName());
 
