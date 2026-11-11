@@ -246,7 +246,7 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 		if (logger.isTraceEnabled()) {
 			try {
 				Files.createDirectories(Paths.get("./logs"));
-				if (direction.equals(DIRECTION.TO)) {
+				if (direction.equals(DIRECTION.FROM)) {
 					Files.write(Paths.get("./logs/TargetSemanticModel.log"), sb.toString().getBytes());
 				} else {
 					Files.write(Paths.get("./logs/SourceSemanticModel.log"), sb.toString().getBytes());
@@ -295,10 +295,6 @@ public class LogSemantic extends ConfigurableSemanticProcessor {
 					businessElementName = fromRule.getBusinessElement().getName();
 				}
 			}
-		}
-
-		if (elementValue == null) {
-			return;
 		}
 
 		String uniqueId = elementValue.getUniqueId();

@@ -182,7 +182,7 @@ public class MdmiUow implements Runnable {
 			watch.split();
 			logger.info("Split processSourceSemanticModel: " + watch.toSplitString());
 
-			LogSemantic lg = new LogSemantic(DIRECTION.FROM);
+			LogSemantic lg = new LogSemantic(DIRECTION.TO);
 			lg.processSemanticModel(this.srcSemanticModel);
 
 			logger.info("Execute processConversions " + Thread.currentThread().getName());
@@ -207,7 +207,7 @@ public class MdmiUow implements Runnable {
 			logger.info("Split postProcess: " + watch.toSplitString());
 			watch.stop();
 
-			LogSemantic targetSemanticLog = new LogSemantic(DIRECTION.TO);
+			LogSemantic targetSemanticLog = new LogSemantic(DIRECTION.FROM);
 			targetSemanticLog.processSemanticModel(this.trgSemanticModel);
 
 			logger.info(Thread.currentThread().getName() + " Process Message in MILLISECONDS: " + watch.getTime());

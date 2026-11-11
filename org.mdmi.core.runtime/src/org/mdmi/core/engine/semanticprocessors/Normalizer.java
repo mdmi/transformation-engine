@@ -27,23 +27,28 @@ public class Normalizer extends ConfigurableSemanticProcessor {
 	@Override
 	public void processSemanticModel(ElementValueSet elementSet) {
 
-		for (IElementValue semanticElement : elementSet.getAllElementValues()) {
-			SemanticElement se = semanticElement.getSemanticElement();
+		for (IElementValue xelementToBeNormalized : elementSet.getAllElementValues()) {
+			SemanticElement se = xelementToBeNormalized.getSemanticElement();
 
 			if (se.getRelationshipByName("NORMALIZE") != null &&
 					se.getRelationshipByName("NORMALIZE").getRelatedSemanticElement() != null) {
 
-				String refValue = extractReferenceValue(semanticElement);
+				String refValue = extractReferenceValue(xelementToBeNormalized);
 				SemanticElement parent = se.getRelationshipByName("NORMALIZE").getRelatedSemanticElement();
 
-				for (IElementValue parentValue : elementSet.getElementValuesByName(parent)) {
-					String idValue = extractIdValue(parent, parentValue);
+				for (IElementValue newParentForNormal : elementSet.getElementValuesByName(parent)) {
+					String idValue = extractIdValue(parent, newParentForNormal);
 
-					if (refValue.equals(idValue) && parentValue.getChildren() != null) {
-						for (IElementValue child : parentValue.getChildren()) {
-							semanticElement.addChild(child);
-						}
-					}
+					xelementToBeNormalized.getParent().removeChild(xelementToBeNormalized);
+					newParentForNormal.addChild(xelementToBeNormalized);
+					xelementToBeNormalized.setParent(newParentForNormal);
+					// newParentForNormal.removeChild(xelementToBeNormalized);
+
+					// if (refValue.equals(idValue) && parentValue.getChildren() != null) {
+					// for (IElementValue child : parentValue.getChildren()) {
+					// semanticElement.addChild(child);
+					// }
+					// parentValue}
 				}
 			}
 		}
